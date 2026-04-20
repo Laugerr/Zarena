@@ -22,10 +22,18 @@ import Scoreboard from "@/components/Scoreboard";
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
   const searchParams = useSearchParams();
-  const name = useMemo(
-    () => searchParams.get("name") || generateName(),
-    [searchParams]
-  );
+  const name = useMemo(() => {
+    const fromUrl = searchParams.get("name");
+    if (fromUrl) {
+      sessionStorage.setItem(`zarena-name-${code}`, fromUrl);
+      return fromUrl;
+    }
+    const stored = sessionStorage.getItem(`zarena-name-${code}`);
+    if (stored) return stored;
+    const random = generateName();
+    sessionStorage.setItem(`zarena-name-${code}`, random);
+    return random;
+  }, [searchParams, code]);
   const hasSentJoin = useRef(false);
 
   // Clean the URL so sharing doesn't include ?name=
@@ -116,7 +124,8 @@ export default function RoomPage() {
           setGame(msg.game);
           setStrokes(msg.game.strokes);
           setRevealedWord(null);
-          if (msg.game.phase === "picking") {
+          // Clear word choices when we move to drawing (drawer already picked)
+          if (msg.game.phase === "drawing" || msg.game.phase === "lobby") {
             setWordChoices([]);
           }
           if (msg.game.phase === "lobby") {
@@ -409,7 +418,7 @@ export default function RoomPage() {
             isDrawer={isDrawer && phase === "drawing"}
             strokes={strokes}
             onStroke={(stroke) => send({ type: "draw-stroke", stroke })}
-            onClear={() => send({ type: "clear-canvas" })}
+            onClear={() => { setStrokes([]); send({ type: "clear-canvas" }); }}
           />
         </div>
 
