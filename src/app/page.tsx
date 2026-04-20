@@ -52,7 +52,7 @@ export default function HomePage() {
 
       {/* Logo */}
       <div className="animate-slide-up text-center relative z-10">
-        <h1 className="bg-gradient-main bg-clip-text text-7xl font-black tracking-tighter text-transparent animate-gradient sm:text-8xl">
+        <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-7xl font-black tracking-tighter text-transparent sm:text-8xl">
           Zarena
         </h1>
         <p className="mt-4 text-lg text-foreground/50 font-medium">

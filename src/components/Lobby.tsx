@@ -1,6 +1,7 @@
 "use client";
 
 import type { Player, RoomSettings } from "@/lib/types";
+import { getAvatar } from "@/lib/avatars";
 import ChatBox, { type ChatEntry } from "@/components/ChatBox";
 
 type LobbyProps = {
@@ -46,7 +47,7 @@ export default function Lobby({
     <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots">
       {/* Header */}
       <div className="animate-slide-up text-center">
-        <h1 className="bg-gradient-main bg-clip-text text-3xl font-black text-transparent animate-gradient">
+        <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-3xl font-black text-transparent">
           Zarena
         </h1>
         <div className="mt-3 flex items-center justify-center gap-3">
@@ -140,13 +141,13 @@ export default function Lobby({
                   key={p.id}
                   className="animate-slide-up flex items-center gap-3 rounded-2xl bg-surface-light/50 px-4 py-3 transition-all hover:bg-surface-lighter/50"
                 >
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-main text-lg">
-                    {i === 0 ? "👑" : "🎮"}
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-surface-lighter text-lg shrink-0">
+                    {getAvatar(p.id)}
                   </div>
-                  <span className="font-bold">{p.name}</span>
+                  <span className="font-bold truncate">{p.name}</span>
                   {i === 0 && (
-                    <span className="ml-auto rounded-lg bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
-                      Host
+                    <span className="ml-auto shrink-0 rounded-lg bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
+                      👑 Host
                     </span>
                   )}
                 </li>
@@ -213,16 +214,16 @@ function SettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3">
+    <div className="flex h-9 items-center justify-between gap-3">
       <span className="text-xs font-semibold text-foreground/60">{label}</span>
-      {children}
+      <div className="w-24 text-right">{children}</div>
     </div>
   );
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-xl bg-surface-lighter px-3 py-1.5 text-xs font-bold text-foreground/50">
+    <span className="inline-block w-full rounded-xl bg-surface-lighter px-3 py-1.5 text-center text-xs font-bold text-foreground/50">
       {children}
     </span>
   );
@@ -246,7 +247,7 @@ function Select({
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       disabled={disabled}
-      className="rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-xs font-bold text-foreground focus:border-accent focus:outline-none disabled:opacity-30 transition-colors cursor-pointer"
+      className="w-full rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-center text-xs font-bold text-foreground focus:border-accent focus:outline-none disabled:opacity-30 transition-colors cursor-pointer"
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>

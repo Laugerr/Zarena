@@ -1,6 +1,7 @@
 "use client";
 
 import type { Player } from "@/lib/types";
+import { getAvatar } from "@/lib/avatars";
 
 type ScoreboardProps = {
   players: Player[];
@@ -28,10 +29,11 @@ export default function Scoreboard({ players, currentDrawer, myId }: ScoreboardP
                 : "bg-surface-light/30"
             } ${p.id === currentDrawer ? "ring-1 ring-pink/30" : ""}`}
           >
-            <span className="w-5 text-center">
-              {i < 3 ? RANK_BADGES[i] : <span className="text-foreground/20">{i + 1}</span>}
+            <span className="w-5 text-center text-sm">
+              {getAvatar(p.id)}
             </span>
             <span className="flex-1 truncate font-semibold">{p.name}</span>
+            {i < 3 && <span className="text-[9px]">{RANK_BADGES[i]}</span>}
             {p.id === currentDrawer && (
               <span className="text-[10px]" title="Drawing">🎨</span>
             )}
