@@ -129,7 +129,7 @@ export default function Lobby({
         </div>
 
         {/* Center: Players */}
-        <div className="animate-slide-up flex-1 glass rounded-3xl p-5 flex flex-col" style={{ animationDelay: "200ms" }}>
+        <div className="animate-slide-up flex-1 glass rounded-3xl p-5 flex flex-col h-80 lg:h-auto" style={{ animationDelay: "200ms" }}>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
             <span className="text-base">🎭</span> Players
             <span className="ml-auto rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold text-accent-light">
@@ -185,7 +185,7 @@ export default function Lobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 h-64 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
+        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 h-80 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
           <div className="shrink-0 px-4 pt-4 pb-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
               <span className="text-base">💬</span> Chat

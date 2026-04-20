@@ -80,15 +80,22 @@ export default function ChatBox({
       </div>
 
       {/* Input — always pinned at bottom */}
-      <form onSubmit={handleSubmit} className="shrink-0 p-3 pt-2 border-t border-surface-lighter/30">
+      <form onSubmit={handleSubmit} className="shrink-0 p-3 pt-2 border-t border-surface-lighter/30 flex gap-2">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={disabled}
           placeholder={disabled ? "..." : placeholder}
-          className="w-full rounded-xl border border-surface-lighter bg-surface-light px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none disabled:opacity-30 transition-colors"
+          className="flex-1 rounded-xl border border-surface-lighter bg-surface-light px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none disabled:opacity-30 transition-colors"
         />
+        <button
+          type="submit"
+          disabled={disabled || !input.trim()}
+          className="shrink-0 rounded-xl bg-accent px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-accent-light active:scale-90 disabled:opacity-20 disabled:hover:bg-accent"
+        >
+          ➤
+        </button>
       </form>
     </div>
   );
