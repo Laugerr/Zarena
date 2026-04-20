@@ -11,8 +11,8 @@ type CanvasProps = {
 };
 
 const COLORS = [
-  "#000000", "#FFFFFF", "#FF0000", "#FF8C00", "#FFD700",
-  "#00C853", "#2196F3", "#9C27B0", "#795548", "#607D8B",
+  "#000000", "#FFFFFF", "#EF4444", "#F97316", "#EAB308",
+  "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899", "#78716C",
 ];
 const SIZES = [4, 8, 16, 32];
 
@@ -24,7 +24,6 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
   const [size, setSize] = useState(8);
   const lastStrokeCount = useRef(0);
 
-  // Redraw all strokes
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -39,26 +38,22 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     }
   }, [strokes]);
 
-  // Initial draw and when strokes change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // If new strokes were added incrementally, only draw the new ones
     if (strokes.length > lastStrokeCount.current && lastStrokeCount.current > 0) {
       for (let i = lastStrokeCount.current; i < strokes.length; i++) {
         drawStroke(ctx, strokes[i]);
       }
     } else {
-      // Full redraw (on clear or initial load)
       redraw();
     }
     lastStrokeCount.current = strokes.length;
   }, [strokes, redraw]);
 
-  // Handle clear (strokes becomes empty)
   useEffect(() => {
     if (strokes.length === 0) {
       lastStrokeCount.current = 0;
@@ -93,7 +88,6 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     const pos = getCanvasPos(e);
     currentPoints.current = [pos];
 
-    // Draw a dot immediately
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -110,7 +104,6 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     const pos = getCanvasPos(e);
     currentPoints.current.push(pos);
 
-    // Draw incrementally on local canvas
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -152,7 +145,7 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
         ref={canvasRef}
         width={800}
         height={600}
-        className="w-full max-w-[800px] rounded-lg border border-foreground/20 bg-white touch-none"
+        className="w-full max-w-[800px] rounded-2xl border-2 border-surface-light bg-white touch-none shadow-lg"
         style={{ aspectRatio: "4/3", cursor: isDrawer ? "crosshair" : "default" }}
         onMouseDown={handleStart}
         onMouseMove={handleMove}
@@ -165,31 +158,36 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
 
       {/* Drawing Tools */}
       {isDrawer && (
-        <div className="flex flex-wrap items-center justify-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-surface-light bg-surface px-5 py-3">
           {/* Colors */}
-          <div className="flex gap-1">
+          <div className="flex gap-1.5">
             {COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full border-2 transition-transform ${
-                  color === c ? "scale-125 border-blue-500" : "border-foreground/20"
+                className={`h-7 w-7 rounded-full border-2 transition-all ${
+                  color === c
+                    ? "scale-125 border-accent ring-2 ring-accent/30"
+                    : "border-surface-light hover:scale-110"
                 }`}
                 style={{ backgroundColor: c }}
               />
             ))}
           </div>
 
+          {/* Divider */}
+          <div className="h-6 w-px bg-surface-light" />
+
           {/* Sizes */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
             {SIZES.map((s) => (
               <button
                 key={s}
                 onClick={() => setSize(s)}
-                className={`flex h-8 w-8 items-center justify-center rounded border transition-colors ${
+                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
                   size === s
-                    ? "border-blue-500 bg-blue-500/10"
-                    : "border-foreground/20"
+                    ? "bg-accent/20 border border-accent"
+                    : "bg-surface-light hover:bg-surface-light/80"
                 }`}
               >
                 <div
@@ -200,10 +198,13 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
             ))}
           </div>
 
+          {/* Divider */}
+          <div className="h-6 w-px bg-surface-light" />
+
           {/* Clear */}
           <button
             onClick={onClear}
-            className="rounded border border-red-300 px-3 py-1 text-sm text-red-500 transition-colors hover:bg-red-50"
+            className="rounded-xl bg-danger/10 px-4 py-2 text-sm font-bold text-danger transition-all hover:bg-danger/20"
           >
             🗑️ Clear
           </button>

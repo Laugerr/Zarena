@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import usePartySocket from "partysocket/react";
 import { generateName } from "@/lib/names";
 import { DEFAULT_SETTINGS } from "@/lib/types";
@@ -21,7 +21,11 @@ import Scoreboard from "@/components/Scoreboard";
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
-  const name = useMemo(() => generateName(), []);
+  const searchParams = useSearchParams();
+  const name = useMemo(
+    () => searchParams.get("name") || generateName(),
+    [searchParams]
+  );
   const hasSentJoin = useRef(false);
 
   const [players, setPlayers] = useState<Player[]>([]);
@@ -226,6 +230,7 @@ export default function RoomPage() {
         <WordPicker
           words={wordChoices}
           onPick={(word) => send({ type: "pick-word", word })}
+          timeLeft={game.timeLeft}
         />
       </main>
     );
@@ -235,11 +240,13 @@ export default function RoomPage() {
   if (phase === "picking") {
     const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-4">
-        <p className="text-xl">
-          🎨 <span className="font-semibold">{drawerName}</span> is choosing a word...
+      <main className="flex flex-1 flex-col items-center justify-center gap-6">
+        <div className="animate-bounce-soft text-6xl">🎨</div>
+        <p className="text-xl font-bold">
+          <span className="text-accent-light">{drawerName}</span> is choosing a
+          word...
         </p>
-        <p className="text-foreground/50">⏳ {game.timeLeft}s</p>
+        <span className="text-3xl font-bold text-warning">{game.timeLeft}s</span>
       </main>
     );
   }
@@ -248,24 +255,33 @@ export default function RoomPage() {
   if (phase === "gameEnd") {
     const sorted = [...players].sort((a, b) => b.score - a.score);
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-6 p-4">
-        <h1 className="text-3xl font-bold">🏁 Game Over!</h1>
-        <div className="flex flex-col items-center gap-2">
+      <main className="flex flex-1 flex-col items-center justify-center gap-8 p-4">
+        <div className="text-center">
+          <h1 className="bg-gradient-warm bg-clip-text text-4xl font-black text-transparent">
+            🏁 Game Over!
+          </h1>
+        </div>
+        <div className="flex flex-col items-center gap-3">
           {sorted.map((p, i) => (
             <div
               key={p.id}
-              className={`flex w-64 items-center justify-between rounded-lg px-4 py-2 ${
-                i === 0 ? "bg-yellow-500/20 text-lg font-bold" : "bg-foreground/5"
+              className={`flex w-72 items-center justify-between rounded-2xl px-5 py-3 ${
+                i === 0
+                  ? "glow-accent border-2 border-accent bg-accent/10 text-lg font-bold"
+                  : "border border-surface-light bg-surface"
               }`}
             >
-              <span>
-                {i === 0 ? "👑" : `${i + 1}.`} {p.name}
+              <span className="flex items-center gap-2">
+                <span>{i === 0 ? "👑" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}.`}</span>
+                <span>{p.name}</span>
               </span>
-              <span className="font-mono">{p.score}</span>
+              <span className="font-mono font-bold text-accent-light">{p.score}</span>
             </div>
           ))}
         </div>
-        <p className="text-foreground/50">Returning to lobby...</p>
+        <p className="animate-bounce-soft text-sm text-foreground/40">
+          Returning to lobby...
+        </p>
       </main>
     );
   }
@@ -274,37 +290,45 @@ export default function RoomPage() {
   const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
 
   return (
-    <main className="flex flex-1 flex-col gap-4 p-4">
+    <main className="flex flex-1 flex-col gap-3 p-3">
       {/* Top Bar */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-foreground/60">
-          Round {game.round}/{game.totalRounds}
+      <div className="flex items-center justify-between rounded-2xl border border-surface-light bg-surface px-5 py-3">
+        <div className="flex items-center gap-2">
+          <span className="rounded-lg bg-accent/20 px-2 py-0.5 text-xs font-bold text-accent-light">
+            Round {game.round}/{game.totalRounds}
+          </span>
         </div>
         <div className="text-center">
           {phase === "roundEnd" && revealedWord ? (
-            <span className="text-lg font-bold text-orange-500">
-              The word was: {revealedWord}
+            <span className="text-lg font-bold text-warning">
+              ✨ {revealedWord}
             </span>
           ) : isDrawer ? (
-            <span className="text-lg font-bold text-green-500">
-              Draw: {game.currentWord}
+            <span className="text-lg font-bold text-success">
+              ✏️ {game.currentWord}
             </span>
           ) : (
-            <span className="font-mono text-lg tracking-widest">
+            <span className="font-mono text-lg font-bold tracking-[0.3em] text-foreground/80">
               {game.hint ?? "_ ".repeat(game.wordLength ?? 5).trim()}
             </span>
           )}
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-2xl font-bold">{game.timeLeft}</span>
-          <span className="text-sm text-foreground/60">sec</span>
+        <div className="flex items-center gap-1">
+          <span
+            className={`text-2xl font-black ${
+              game.timeLeft <= 10 ? "animate-pulse-urgent text-danger" : "text-foreground"
+            }`}
+          >
+            {game.timeLeft}
+          </span>
+          <span className="text-xs text-foreground/40">s</span>
         </div>
       </div>
 
       {/* Main Game Area */}
-      <div className="flex flex-1 gap-4 min-h-0">
+      <div className="flex flex-1 gap-3 min-h-0">
         {/* Scoreboard */}
-        <div className="hidden w-48 md:block">
+        <div className="hidden w-52 md:block">
           <Scoreboard
             players={players}
             currentDrawer={game.currentDrawer}
@@ -323,7 +347,7 @@ export default function RoomPage() {
         </div>
 
         {/* Chat */}
-        <div className="hidden w-64 md:flex md:flex-col">
+        <div className="hidden w-64 rounded-2xl border border-surface-light bg-surface md:flex md:flex-col">
           <ChatBox
             entries={chatEntries}
             onGuess={(text) => send({ type: "guess", text })}
@@ -332,19 +356,23 @@ export default function RoomPage() {
         </div>
       </div>
 
-      {/* Mobile Chat (below canvas) */}
-      <div className="h-48 md:hidden">
-        <ChatBox
-          entries={chatEntries}
-          onGuess={(text) => send({ type: "guess", text })}
-          disabled={isDrawer || phase !== "drawing"}
-        />
+      {/* Mobile: Scoreboard + Chat */}
+      <div className="flex flex-col gap-3 md:hidden">
+        <div className="h-48">
+          <div className="h-full rounded-2xl border border-surface-light bg-surface">
+            <ChatBox
+              entries={chatEntries}
+              onGuess={(text) => send({ type: "guess", text })}
+              disabled={isDrawer || phase !== "drawing"}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Who's drawing */}
       {!isDrawer && phase === "drawing" && (
-        <p className="text-center text-sm text-foreground/50">
-          🎨 {drawerName} is drawing
+        <p className="text-center text-xs text-foreground/40">
+          🎨 <span className="font-medium text-accent-light">{drawerName}</span> is drawing
         </p>
       )}
     </main>

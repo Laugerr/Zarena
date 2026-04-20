@@ -40,41 +40,53 @@ export default function ChatBox({
   }
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-foreground/10">
+    <div className="flex h-full flex-col rounded-2xl">
       {/* Messages */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 space-y-1 text-sm"
+        className="flex-1 overflow-y-auto p-3 space-y-1.5 text-sm"
       >
+        {entries.length === 0 && (
+          <p className="text-center text-foreground/20 text-xs pt-4">
+            No messages yet...
+          </p>
+        )}
         {entries.map((entry) => (
           <div key={entry.id}>
             {entry.type === "guess" && (
-              <p>
-                <span className="font-semibold">{entry.playerName}:</span>{" "}
+              <p className="text-foreground/80">
+                <span className="font-bold text-accent-light">
+                  {entry.playerName}:
+                </span>{" "}
                 {entry.text}
               </p>
             )}
             {entry.type === "correct" && (
-              <p className="font-semibold text-green-500">
+              <p className="font-bold text-success">
                 🎉 {entry.playerName} guessed it!
               </p>
             )}
             {entry.type === "system" && (
-              <p className="text-foreground/50 italic">{entry.text}</p>
+              <p className="text-foreground/40 italic text-xs">
+                {entry.text}
+              </p>
             )}
           </div>
         ))}
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="border-t border-foreground/10 p-2">
+      <form
+        onSubmit={handleSubmit}
+        className="border-t border-surface-light p-2"
+      >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={disabled}
-          placeholder={disabled ? "You can't guess right now" : placeholder}
-          className="w-full rounded border border-foreground/20 bg-transparent px-3 py-2 text-sm placeholder:text-foreground/30 focus:border-blue-500 focus:outline-none disabled:opacity-50"
+          placeholder={disabled ? "Can't type right now" : placeholder}
+          className="w-full rounded-xl border border-surface-light bg-surface-light px-3 py-2 text-sm text-foreground placeholder:text-foreground/25 focus:border-accent focus:outline-none disabled:opacity-40"
         />
       </form>
     </div>
