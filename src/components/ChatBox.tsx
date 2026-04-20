@@ -28,7 +28,6 @@ export default function ChatBox({
   useEffect(() => {
     const el = scrollRef.current;
     if (el) {
-      // Always scroll to bottom on new messages
       el.scrollTop = el.scrollHeight;
     }
   }, [entries.length]);
@@ -42,43 +41,45 @@ export default function ChatBox({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Messages — pinned height with scroll */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto overscroll-contain px-4 py-2 space-y-1.5 text-sm min-h-0"
-      >
-        {entries.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <span className="text-2xl opacity-20">💬</span>
-            <p className="text-foreground/15 text-xs mt-1">No messages yet</p>
-          </div>
-        )}
-        {entries.map((entry) => (
-          <div key={entry.id}>
-            {entry.type === "guess" && (
-              <p className="text-foreground/70">
-                <span className="font-bold text-accent-light">
-                  {entry.playerName}
-                </span>{" "}
-                <span className="text-foreground/50">{entry.text}</span>
-              </p>
-            )}
-            {entry.type === "correct" && (
-              <p className="rounded-xl bg-success/10 px-3 py-1.5 font-bold text-success text-xs">
-                🎉 {entry.playerName} got it!
-              </p>
-            )}
-            {entry.type === "system" && (
-              <p className="text-[11px] text-foreground/25 italic">
-                {entry.text}
-              </p>
-            )}
-          </div>
-        ))}
+    <div className="relative flex h-full flex-col">
+      {/* Messages — absolute positioned to prevent height expansion */}
+      <div className="relative flex-1 min-h-0">
+        <div
+          ref={scrollRef}
+          className="absolute inset-0 overflow-y-auto overscroll-contain px-4 py-2 space-y-1.5 text-sm"
+        >
+          {entries.length === 0 && (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <span className="text-2xl opacity-20">💬</span>
+              <p className="text-foreground/15 text-xs mt-1">No messages yet</p>
+            </div>
+          )}
+          {entries.map((entry) => (
+            <div key={entry.id}>
+              {entry.type === "guess" && (
+                <p className="text-foreground/70">
+                  <span className="font-bold text-accent-light">
+                    {entry.playerName}
+                  </span>{" "}
+                  <span className="text-foreground/50">{entry.text}</span>
+                </p>
+              )}
+              {entry.type === "correct" && (
+                <p className="rounded-xl bg-success/10 px-3 py-1.5 font-bold text-success text-xs">
+                  🎉 {entry.playerName} got it!
+                </p>
+              )}
+              {entry.type === "system" && (
+                <p className="text-[11px] text-foreground/25 italic">
+                  {entry.text}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Input */}
+      {/* Input — always pinned at bottom */}
       <form onSubmit={handleSubmit} className="shrink-0 p-3 pt-2 border-t border-surface-lighter/30">
         <input
           type="text"

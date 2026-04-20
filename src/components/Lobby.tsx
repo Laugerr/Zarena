@@ -46,7 +46,7 @@ export default function Lobby({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots">
+    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots overflow-hidden">
       {/* Header */}
       <div className="animate-slide-up text-center">
         <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-3xl font-black text-transparent">
@@ -185,21 +185,19 @@ export default function Lobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="animate-slide-up glass rounded-3xl p-0 overflow-hidden lg:w-72 h-64 lg:h-auto" style={{ animationDelay: "300ms" }}>
-          <div className="h-full flex flex-col">
-            <div className="px-4 pt-4 pb-2">
-              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
-                <span className="text-base">💬</span> Chat
-              </h2>
-            </div>
-            <div className="flex-1 min-h-0">
-              <ChatBox
-                entries={chatEntries}
-                onGuess={onChat}
-                disabled={false}
-                placeholder="Say hi! 👋"
-              />
-            </div>
+        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 h-64 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
+          <div className="shrink-0 px-4 pt-4 pb-2">
+            <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
+              <span className="text-base">💬</span> Chat
+            </h2>
+          </div>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ChatBox
+              entries={chatEntries}
+              onGuess={onChat}
+              disabled={false}
+              placeholder="Say hi! 👋"
+            />
           </div>
         </div>
       </div>

@@ -423,13 +423,13 @@ export default function RoomPage() {
         </div>
 
         {/* Chat */}
-        <div className="hidden w-60 glass rounded-3xl lg:flex lg:flex-col overflow-hidden">
-          <div className="px-4 pt-3 pb-1">
+        <div className="hidden w-60 h-full glass rounded-3xl lg:flex lg:flex-col overflow-hidden">
+          <div className="shrink-0 px-4 pt-3 pb-1">
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">
               {isDrawer ? "Chat" : "Guess here"}
             </span>
           </div>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             <ChatBox
               entries={chatEntries}
               onGuess={(text) => send({ type: "guess", text })}
