@@ -12,9 +12,10 @@ export type RoomSettings = {
   language: "en";
   drawTime: number;
   rounds: number;
-  gameMode: "normal";
+  gameMode: "draw" | "geo";
   wordCount: number;
   hints: number;
+  geoTime: number;
 };
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -22,13 +23,14 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   language: "en",
   drawTime: 60,
   rounds: 3,
-  gameMode: "normal",
+  gameMode: "draw",
   wordCount: 3,
   hints: 2,
+  geoTime: 30,
 };
 
 /** Game phase */
-export type GamePhase = "lobby" | "picking" | "drawing" | "roundEnd" | "gameEnd";
+export type GamePhase = "lobby" | "picking" | "drawing" | "roundEnd" | "gameEnd" | "geoGuessing" | "geoResults";
 
 /** A single drawing stroke */
 export type Stroke = {
@@ -37,18 +39,44 @@ export type Stroke = {
   size: number;
 };
 
+/** A lat/lng coordinate */
+export type LatLng = { lat: number; lng: number };
+
+/** A GeoGuess location */
+export type GeoLocation = {
+  id: string;
+  position: LatLng;
+  heading: number;
+  name: string; // revealed after round
+};
+
+/** A player's geo guess */
+export type GeoGuessResult = {
+  playerId: string;
+  playerName: string;
+  guess: LatLng;
+  distance: number; // km
+  points: number;
+};
+
 /** Game state sent to clients */
 export type GameState = {
   phase: GamePhase;
+  // Draw & Guess
   currentDrawer: string | null;
-  currentWord: string | null; // only sent to the drawer
+  currentWord: string | null;
   wordLength: number | null;
-  hint: string | null; // e.g. "_ a _ _ l e"
+  hint: string | null;
+  strokes: Stroke[];
+  // GeoGuess
+  geoLocation: { lat: number; lng: number; heading: number } | null;
+  geoGuesses: GeoGuessResult[];
+  geoLocationName: string | null;
+  // Shared
   timeLeft: number;
   round: number;
   totalRounds: number;
   scores: Record<string, number>;
-  strokes: Stroke[];
 };
 
 /** Messages sent from client to PartyKit server */
@@ -60,7 +88,8 @@ export type ClientMessage =
   | { type: "draw-stroke"; stroke: Stroke }
   | { type: "clear-canvas" }
   | { type: "guess"; text: string }
-  | { type: "chat"; text: string };
+  | { type: "chat"; text: string }
+  | { type: "geo-guess"; position: LatLng };
 
 /** Messages sent from PartyKit server to clients */
 export type ServerMessage =
@@ -78,4 +107,6 @@ export type ServerMessage =
   | { type: "chat-message"; playerId: string; playerName: string; text: string }
   | { type: "hint-update"; hint: string }
   | { type: "round-end"; word: string; scores: Record<string, number> }
-  | { type: "game-end"; scores: Record<string, number> };
+  | { type: "game-end"; scores: Record<string, number> }
+  | { type: "geo-round-results"; results: GeoGuessResult[]; location: GeoLocation; scores: Record<string, number> }
+  | { type: "player-guessed"; playerId: string };

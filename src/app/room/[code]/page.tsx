@@ -8,6 +8,8 @@ import { DEFAULT_SETTINGS } from "@/lib/types";
 import type {
   ClientMessage,
   GameState,
+  GeoGuessResult,
+  GeoLocation,
   Player,
   RoomSettings,
   ServerMessage,
@@ -18,6 +20,9 @@ import Canvas from "@/components/Canvas";
 import ChatBox, { type ChatEntry } from "@/components/ChatBox";
 import WordPicker from "@/components/WordPicker";
 import Scoreboard from "@/components/Scoreboard";
+import GeoStreetView from "@/components/GeoStreetView";
+import GeoGuessMap from "@/components/GeoGuessMap";
+import GeoResults from "@/components/GeoResults";
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
@@ -51,6 +56,10 @@ export default function RoomPage() {
   const [chatEntries, setChatEntries] = useState<ChatEntry[]>([]);
   const [strokes, setStrokes] = useState<Stroke[]>([]);
   const [revealedWord, setRevealedWord] = useState<string | null>(null);
+  const [hasGeoGuessed, setHasGeoGuessed] = useState(false);
+  const [geoResults, setGeoResults] = useState<GeoGuessResult[] | null>(null);
+  const [geoResultLocation, setGeoResultLocation] = useState<GeoLocation | null>(null);
+  const [geoPlayerGuessed, setGeoPlayerGuessed] = useState<Set<string>>(new Set());
 
   const chatIdCounter = useRef(0);
 
@@ -113,6 +122,10 @@ export default function RoomPage() {
           setStrokes([]);
           setChatEntries([]);
           setRevealedWord(null);
+          setHasGeoGuessed(false);
+          setGeoResults(null);
+          setGeoResultLocation(null);
+          setGeoPlayerGuessed(new Set());
           addChatEntry({ type: "system", text: "🎮 Game started!" });
           break;
 
@@ -130,6 +143,13 @@ export default function RoomPage() {
           }
           if (msg.game.phase === "lobby") {
             addChatEntry({ type: "system", text: "🏠 Back to lobby" });
+          }
+          // Reset geo guess state for new round
+          if (msg.game.phase === "geoGuessing") {
+            setHasGeoGuessed(false);
+            setGeoResults(null);
+            setGeoResultLocation(null);
+            setGeoPlayerGuessed(new Set());
           }
           break;
 
@@ -197,6 +217,22 @@ export default function RoomPage() {
             }))
           );
           addChatEntry({ type: "system", text: "🏁 Game over!" });
+          break;
+
+        case "geo-round-results":
+          setGeoResults(msg.results);
+          setGeoResultLocation(msg.location);
+          setGame((prev) => (prev ? { ...prev, phase: "geoResults" } : null));
+          setPlayers((prev) =>
+            prev.map((p) => ({
+              ...p,
+              score: msg.scores[p.id] ?? p.score,
+            }))
+          );
+          break;
+
+        case "player-guessed":
+          setGeoPlayerGuessed((prev) => new Set(prev).add(msg.playerId));
           break;
       }
     },
@@ -322,6 +358,89 @@ export default function RoomPage() {
         <div className="animate-float flex items-center gap-2 text-foreground/30">
           <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
           <span className="text-sm">Returning to lobby...</span>
+        </div>
+      </main>
+    );
+  }
+
+  // --- GEO RESULTS ---
+  if (phase === "geoResults" && geoResults && geoResultLocation) {
+    return (
+      <GeoResults
+        results={geoResults}
+        location={geoResultLocation}
+        scores={Object.fromEntries(players.map((p) => [p.id, p.score]))}
+        myId={myId}
+      />
+    );
+  }
+
+  // --- GEO GUESSING ---
+  if (phase === "geoGuessing" && game.geoLocation) {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_KEY ?? "";
+    const guessedCount = geoPlayerGuessed.size;
+    const totalPlayers = players.length;
+
+    return (
+      <main className="flex flex-1 flex-col gap-3 p-3 bg-gradient-game min-h-0">
+        {/* Top bar */}
+        <div className="glass flex items-center justify-between rounded-2xl px-5 py-3">
+          <div className="flex items-center gap-3">
+            <span className="rounded-xl bg-accent/20 px-3 py-1 text-xs font-black text-accent-light">
+              {game.round}/{game.totalRounds}
+            </span>
+            <span className="text-xs text-foreground/30">
+              🌍 Where is this?
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-foreground/40">
+              {guessedCount}/{totalPlayers} guessed
+            </span>
+            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+              game.timeLeft <= 5
+                ? "bg-danger/20 animate-pulse-urgent"
+                : game.timeLeft <= 10
+                ? "bg-warning/20"
+                : "bg-surface-lighter"
+            }`}>
+              <span className={`text-lg font-black ${
+                game.timeLeft <= 5
+                  ? "text-danger"
+                  : game.timeLeft <= 10
+                  ? "text-warning"
+                  : "text-foreground"
+              }`}>
+                {game.timeLeft}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Street View + Map */}
+        <div className="flex flex-1 gap-3 min-h-0 flex-col lg:flex-row">
+          {/* Street View */}
+          <div className="flex-1 min-h-0 min-h-[250px]">
+            <GeoStreetView
+              lat={game.geoLocation.lat}
+              lng={game.geoLocation.lng}
+              heading={game.geoLocation.heading}
+              apiKey={apiKey}
+            />
+          </div>
+
+          {/* Guess Map */}
+          <div className="lg:w-80 h-72 lg:h-auto shrink-0">
+            <GeoGuessMap
+              onGuess={(position) => {
+                setHasGeoGuessed(true);
+                send({ type: "geo-guess", position });
+              }}
+              hasGuessed={hasGeoGuessed}
+              disabled={false}
+            />
+          </div>
         </div>
       </main>
     );

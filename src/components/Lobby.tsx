@@ -17,10 +17,15 @@ type LobbyProps = {
 };
 
 const DRAW_TIME_OPTIONS = [30, 45, 60, 90, 120];
+const GEO_TIME_OPTIONS = [15, 20, 30, 45, 60];
 const ROUNDS_OPTIONS = [1, 2, 3, 4, 5];
 const MAX_PLAYERS_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 10, 12];
 const WORD_COUNT_OPTIONS = [2, 3, 4];
 const HINTS_OPTIONS = [0, 1, 2, 3];
+const GAME_MODES = [
+  { value: "draw" as const, label: "Draw & Guess", icon: "🎨" },
+  { value: "geo" as const, label: "GeoGuess", icon: "🌍" },
+];
 
 export default function Lobby({
   code,
@@ -89,14 +94,25 @@ export default function Lobby({
             <SettingRow label="🌐 Language" icon="">
               <Chip>English</Chip>
             </SettingRow>
-            <SettingRow label="⏱️ Draw Time" icon="">
-              <Select
-                options={DRAW_TIME_OPTIONS}
-                value={settings.drawTime}
-                onChange={(v) => updateSetting("drawTime", v)}
-                disabled={!isHost}
-                suffix="s"
-              />
+            <SettingRow label="🎲 Mode" icon="">
+              {isHost ? (
+                <select
+                  value={settings.gameMode}
+                  onChange={(e) => updateSetting("gameMode", e.target.value as "draw" | "geo")}
+                  className="w-full rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-center text-xs font-bold text-foreground focus:border-accent focus:outline-none transition-colors cursor-pointer"
+                >
+                  {GAME_MODES.map((mode) => (
+                    <option key={mode.value} value={mode.value}>
+                      {mode.icon} {mode.label}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <Chip>
+                  {GAME_MODES.find((m) => m.value === settings.gameMode)?.icon}{" "}
+                  {GAME_MODES.find((m) => m.value === settings.gameMode)?.label}
+                </Chip>
+              )}
             </SettingRow>
             <SettingRow label="🔄 Rounds" icon="">
               <Select
@@ -106,25 +122,45 @@ export default function Lobby({
                 disabled={!isHost}
               />
             </SettingRow>
-            <SettingRow label="🎲 Mode" icon="">
-              <Chip>Normal</Chip>
-            </SettingRow>
-            <SettingRow label="📝 Words" icon="">
-              <Select
-                options={WORD_COUNT_OPTIONS}
-                value={settings.wordCount}
-                onChange={(v) => updateSetting("wordCount", v)}
-                disabled={!isHost}
-              />
-            </SettingRow>
-            <SettingRow label="💡 Hints" icon="">
-              <Select
-                options={HINTS_OPTIONS}
-                value={settings.hints}
-                onChange={(v) => updateSetting("hints", v)}
-                disabled={!isHost}
-              />
-            </SettingRow>
+            {settings.gameMode === "draw" ? (
+              <>
+                <SettingRow label="⏱️ Draw Time" icon="">
+                  <Select
+                    options={DRAW_TIME_OPTIONS}
+                    value={settings.drawTime}
+                    onChange={(v) => updateSetting("drawTime", v)}
+                    disabled={!isHost}
+                    suffix="s"
+                  />
+                </SettingRow>
+                <SettingRow label="📝 Words" icon="">
+                  <Select
+                    options={WORD_COUNT_OPTIONS}
+                    value={settings.wordCount}
+                    onChange={(v) => updateSetting("wordCount", v)}
+                    disabled={!isHost}
+                  />
+                </SettingRow>
+                <SettingRow label="💡 Hints" icon="">
+                  <Select
+                    options={HINTS_OPTIONS}
+                    value={settings.hints}
+                    onChange={(v) => updateSetting("hints", v)}
+                    disabled={!isHost}
+                  />
+                </SettingRow>
+              </>
+            ) : (
+              <SettingRow label="⏱️ Guess Time" icon="">
+                <Select
+                  options={GEO_TIME_OPTIONS}
+                  value={settings.geoTime}
+                  onChange={(v) => updateSetting("geoTime", v)}
+                  disabled={!isHost}
+                  suffix="s"
+                />
+              </SettingRow>
+            )}
           </div>
         </div>
 

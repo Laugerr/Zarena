@@ -7,9 +7,13 @@ import type {
   GameState,
   Stroke,
   GamePhase,
+  GeoLocation,
+  GeoGuessResult,
+  LatLng,
 } from "../src/lib/types";
 import { DEFAULT_SETTINGS } from "../src/lib/types";
 import { WORDS_EN } from "../src/lib/words";
+import { GEO_LOCATIONS } from "../src/lib/locations";
 
 export default class RoomServer implements Server {
   readonly room: Party;
@@ -29,6 +33,11 @@ export default class RoomServer implements Server {
   hintsRevealed = 0;
   hintString: string | null = null;
   correctGuessers = new Set<string>();
+
+  // GeoGuess state
+  geoLocationPool: GeoLocation[] = [];
+  currentGeoLocation: GeoLocation | null = null;
+  geoGuesses = new Map<string, LatLng>();
 
   constructor(room: Party) {
     this.room = room;
@@ -75,6 +84,9 @@ export default class RoomServer implements Server {
       case "chat":
         this.handleChat(sender, data.text);
         break;
+      case "geo-guess":
+        this.handleGeoGuess(sender, data.position);
+        break;
     }
   }
 
@@ -93,6 +105,17 @@ export default class RoomServer implements Server {
       // If current drawer left during a game, skip to next turn
       if (this.phase === "drawing" && this.getCurrentDrawerId() === conn.id) {
         this.endTurn();
+      }
+
+      // In geo mode, check if all remaining players have guessed
+      if (this.phase === "geoGuessing") {
+        this.geoGuesses.delete(conn.id);
+        const allGuessed = Array.from(this.players.keys()).every((id) =>
+          this.geoGuesses.has(id)
+        );
+        if (allGuessed && this.players.size > 0) {
+          this.endGeoRound();
+        }
       }
     }
   }
@@ -137,12 +160,16 @@ export default class RoomServer implements Server {
 
     this.round = 1;
     this.turnIndex = 0;
-    this.turnOrder = Array.from(this.players.keys());
-    this.shuffleArray(this.turnOrder);
-    this.phase = "picking";
 
-    this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
-    this.startPickingPhase();
+    if (this.settings.gameMode === "geo") {
+      this.startGeoGame();
+    } else {
+      this.turnOrder = Array.from(this.players.keys());
+      this.shuffleArray(this.turnOrder);
+      this.phase = "picking";
+      this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
+      this.startPickingPhase();
+    }
   }
 
   private handlePickWord(conn: Connection, word: string) {
@@ -366,6 +393,126 @@ export default class RoomServer implements Server {
     }, 10000);
   }
 
+  // --- GeoGuess Flow ---
+
+  private handleGeoGuess(conn: Connection, position: LatLng) {
+    if (this.phase !== "geoGuessing") return;
+    if (this.geoGuesses.has(conn.id)) return; // already guessed
+
+    this.geoGuesses.set(conn.id, position);
+    this.broadcast({ type: "player-guessed", playerId: conn.id });
+
+    // Check if all players have guessed
+    const allGuessed = Array.from(this.players.keys()).every((id) =>
+      this.geoGuesses.has(id)
+    );
+    if (allGuessed) {
+      this.endGeoRound();
+    }
+  }
+
+  private startGeoGame() {
+    // Prepare a shuffled pool of locations for all rounds
+    this.geoLocationPool = [...GEO_LOCATIONS];
+    this.shuffleArray(this.geoLocationPool);
+
+    this.phase = "geoGuessing";
+    this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
+    this.startGeoRound();
+  }
+
+  private startGeoRound() {
+    this.phase = "geoGuessing";
+    this.geoGuesses.clear();
+
+    // Pick next location from pool
+    if (this.geoLocationPool.length === 0) {
+      // Reshuffle if we run out
+      this.geoLocationPool = [...GEO_LOCATIONS];
+      this.shuffleArray(this.geoLocationPool);
+    }
+    this.currentGeoLocation = this.geoLocationPool.pop()!;
+
+    this.broadcastPhaseChange();
+
+    // Start timer
+    this.startTimer(this.settings.geoTime, () => {
+      this.endGeoRound();
+    });
+  }
+
+  private endGeoRound() {
+    this.stopTimer();
+
+    if (!this.currentGeoLocation) return;
+
+    const location = this.currentGeoLocation;
+    const results: GeoGuessResult[] = [];
+
+    for (const [id, player] of this.players) {
+      const guess = this.geoGuesses.get(id);
+      let distance: number;
+      let points: number;
+
+      if (guess) {
+        distance = this.haversineDistance(guess, location.position);
+        points = Math.round(5000 * Math.exp(-distance / 2000));
+      } else {
+        // No guess = 0 points, max distance
+        distance = 20000;
+        points = 0;
+      }
+
+      player.score += points;
+      results.push({
+        playerId: id,
+        playerName: player.name,
+        guess: guess ?? { lat: 0, lng: 0 },
+        distance,
+        points,
+      });
+    }
+
+    // Sort by points descending
+    results.sort((a, b) => b.points - a.points);
+
+    const scores: Record<string, number> = {};
+    for (const [id, player] of this.players) {
+      scores[id] = player.score;
+    }
+
+    this.phase = "geoResults";
+    this.broadcast({
+      type: "geo-round-results",
+      results,
+      location,
+      scores,
+    });
+
+    // After 8 seconds, advance to next round or end game
+    setTimeout(() => {
+      this.round++;
+      if (this.round > this.settings.rounds) {
+        this.endGame();
+      } else {
+        this.startGeoRound();
+      }
+    }, 8000);
+  }
+
+  private haversineDistance(a: LatLng, b: LatLng): number {
+    const R = 6371; // Earth radius in km
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const sinLat = Math.sin(dLat / 2);
+    const sinLng = Math.sin(dLng / 2);
+    const h =
+      sinLat * sinLat +
+      Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * sinLng * sinLng;
+    return R * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+  }
+
   // --- Helpers ---
 
   private getCurrentDrawerId(): string | null {
@@ -389,6 +536,12 @@ export default class RoomServer implements Server {
         Array.from(this.players.entries()).map(([id, p]) => [id, p.score])
       ),
       strokes: this.strokes,
+      // GeoGuess fields
+      geoLocation: this.currentGeoLocation
+        ? { lat: this.currentGeoLocation.position.lat, lng: this.currentGeoLocation.position.lng, heading: this.currentGeoLocation.heading }
+        : null,
+      geoGuesses: [],
+      geoLocationName: null, // only revealed in results
     };
   }
 
