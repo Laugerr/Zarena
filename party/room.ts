@@ -257,15 +257,15 @@ export default class RoomServer implements Server {
     const drawerId = this.getCurrentDrawerId();
     if (!drawerId) return;
 
-    // Send word choices to the drawer
     const words = this.pickRandomWords(this.settings.wordCount);
+
+    // Broadcast phase change first, then send word choices to drawer
+    this.broadcastPhaseChange();
+
     const drawerConn = this.room.getConnection(drawerId);
     if (drawerConn) {
       drawerConn.send(JSON.stringify({ type: "pick-words", words } as ServerMessage));
     }
-
-    // Broadcast phase change to all
-    this.broadcastPhaseChange();
 
     // Auto-pick timeout (15s to pick a word)
     this.startTimer(15, () => {

@@ -28,6 +28,13 @@ export default function RoomPage() {
   );
   const hasSentJoin = useRef(false);
 
+  // Clean the URL so sharing doesn't include ?name=
+  useEffect(() => {
+    if (searchParams.get("name")) {
+      window.history.replaceState({}, "", `/room/${code}`);
+    }
+  }, [searchParams, code]);
+
   const [players, setPlayers] = useState<Player[]>([]);
   const [settings, setSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
   const [hostId, setHostId] = useState("");
@@ -246,8 +253,8 @@ export default function RoomPage() {
           <div className="absolute -top-2 -right-2 animate-spin-slow text-2xl">✨</div>
         </div>
         <div className="text-center animate-slide-up">
-          <p className="text-2xl font-black">
-            <span className="bg-gradient-main bg-clip-text text-transparent">{drawerName}</span>
+          <p className="text-2xl font-black text-pink">
+            {drawerName}
           </p>
           <p className="mt-2 text-foreground/40">is choosing a word...</p>
         </div>
@@ -346,13 +353,13 @@ export default function RoomPage() {
               </span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex flex-wrap items-center justify-center gap-1 max-w-[60vw]">
               {(game.hint ?? "_ ".repeat(game.wordLength ?? 5).trim())
                 .split(" ")
                 .map((ch, i) => (
                   <span
                     key={i}
-                    className={`flex h-8 w-6 items-center justify-center rounded-lg text-base font-black ${
+                    className={`flex h-7 w-5 sm:h-8 sm:w-6 items-center justify-center rounded text-sm sm:text-base font-black ${
                       ch === "_"
                         ? "bg-surface-lighter text-foreground/20"
                         : "bg-accent/20 text-accent-light"

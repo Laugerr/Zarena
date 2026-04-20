@@ -40,7 +40,9 @@ export default function Lobby({
   }
 
   function copyLink() {
-    navigator.clipboard.writeText(window.location.href);
+    // Strip query params (like ?name=) so others get a clean link
+    const url = window.location.origin + window.location.pathname;
+    navigator.clipboard.writeText(url);
   }
 
   return (
