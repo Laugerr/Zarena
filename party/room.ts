@@ -139,6 +139,7 @@ export default class RoomServer implements Server {
     this.turnIndex = 0;
     this.turnOrder = Array.from(this.players.keys());
     this.shuffleArray(this.turnOrder);
+    this.phase = "picking";
 
     this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
     this.startPickingPhase();

@@ -288,7 +288,7 @@ export default function RoomPage() {
           <div className="absolute -bottom-2 -right-3 text-xl animate-float-slow">✨</div>
         </div>
 
-        <h1 className="animate-slide-up bg-gradient-warm bg-clip-text text-4xl font-black text-transparent sm:text-5xl">
+        <h1 className="animate-slide-up bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-4xl font-black text-transparent sm:text-5xl">
           Game Over!
         </h1>
 
