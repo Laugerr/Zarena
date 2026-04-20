@@ -38,35 +38,44 @@ export default function Lobby({
     onUpdateSettings({ ...settings, [key]: value });
   }
 
+  function copyLink() {
+    navigator.clipboard.writeText(window.location.href);
+  }
+
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-8">
-      {/* Room Header */}
-      <div className="text-center">
-        <h1 className="bg-gradient-fun bg-clip-text text-3xl font-black text-transparent">
-          🎮 Zarena
+    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots">
+      {/* Header */}
+      <div className="animate-slide-up text-center">
+        <h1 className="bg-gradient-main bg-clip-text text-3xl font-black text-transparent animate-gradient">
+          Zarena
         </h1>
         <div className="mt-3 flex items-center justify-center gap-3">
-          <span className="text-sm text-foreground/50">Room</span>
-          <span className="rounded-lg bg-surface-light px-4 py-1.5 font-mono text-lg font-bold tracking-[0.2em] text-accent-light">
-            {code}
-          </span>
-          <button
-            onClick={() => navigator.clipboard.writeText(window.location.href)}
-            className="rounded-lg bg-surface px-3 py-1.5 text-sm transition-all hover:bg-surface-light"
-            title="Copy invite link"
-          >
-            📋
-          </button>
+          <div className="glass rounded-2xl px-5 py-2 flex items-center gap-3">
+            <span className="text-xs uppercase tracking-wider text-foreground/40">Room</span>
+            <span className="font-mono text-xl font-black tracking-[0.2em] text-cyan">
+              {code}
+            </span>
+            <button
+              onClick={copyLink}
+              className="rounded-lg bg-surface-lighter px-2.5 py-1 text-xs transition-all hover:bg-accent hover:text-white active:scale-90"
+              title="Copy invite link"
+            >
+              📋 Copy
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Settings + Players + Chat Grid */}
-      <div className="flex w-full max-w-4xl flex-col gap-4 lg:flex-row">
-        {/* Settings Panel */}
-        <div className="flex-1 rounded-2xl border border-surface-light bg-surface p-5">
-          <h2 className="mb-4 text-base font-bold text-foreground/80">⚙️ Settings</h2>
+      {/* Main Content */}
+      <div className="flex w-full max-w-5xl flex-1 flex-col gap-4 lg:flex-row min-h-0">
+        {/* Left: Settings */}
+        <div className="animate-slide-up glass rounded-3xl p-5 lg:w-72" style={{ animationDelay: "100ms" }}>
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
+            <span className="text-base">⚙️</span> Settings
+            {!isHost && <span className="text-[10px] text-foreground/30 normal-case">(host only)</span>}
+          </h2>
           <div className="flex flex-col gap-3">
-            <SettingRow label="👥 Players">
+            <SettingRow label="👥 Max Players" icon="">
               <Select
                 options={MAX_PLAYERS_OPTIONS}
                 value={settings.maxPlayers}
@@ -74,12 +83,10 @@ export default function Lobby({
                 disabled={!isHost}
               />
             </SettingRow>
-            <SettingRow label="🌐 Language">
-              <span className="rounded-lg bg-surface-light px-3 py-1.5 text-sm text-foreground/60">
-                English
-              </span>
+            <SettingRow label="🌐 Language" icon="">
+              <Chip>English</Chip>
             </SettingRow>
-            <SettingRow label="⏱️ Draw Time">
+            <SettingRow label="⏱️ Draw Time" icon="">
               <Select
                 options={DRAW_TIME_OPTIONS}
                 value={settings.drawTime}
@@ -88,7 +95,7 @@ export default function Lobby({
                 suffix="s"
               />
             </SettingRow>
-            <SettingRow label="🔄 Rounds">
+            <SettingRow label="🔄 Rounds" icon="">
               <Select
                 options={ROUNDS_OPTIONS}
                 value={settings.rounds}
@@ -96,12 +103,10 @@ export default function Lobby({
                 disabled={!isHost}
               />
             </SettingRow>
-            <SettingRow label="🎲 Mode">
-              <span className="rounded-lg bg-surface-light px-3 py-1.5 text-sm text-foreground/60">
-                Normal
-              </span>
+            <SettingRow label="🎲 Mode" icon="">
+              <Chip>Normal</Chip>
             </SettingRow>
-            <SettingRow label="📝 Words">
+            <SettingRow label="📝 Words" icon="">
               <Select
                 options={WORD_COUNT_OPTIONS}
                 value={settings.wordCount}
@@ -109,7 +114,7 @@ export default function Lobby({
                 disabled={!isHost}
               />
             </SettingRow>
-            <SettingRow label="💡 Hints">
+            <SettingRow label="💡 Hints" icon="">
               <Select
                 options={HINTS_OPTIONS}
                 value={settings.hints}
@@ -120,64 +125,81 @@ export default function Lobby({
           </div>
         </div>
 
-        {/* Players Panel */}
-        <div className="w-full rounded-2xl border border-surface-light bg-surface p-5 lg:w-56">
-          <h2 className="mb-4 text-base font-bold text-foreground/80">
-            🎭 Players{" "}
-            <span className="text-sm font-normal text-foreground/40">
+        {/* Center: Players */}
+        <div className="animate-slide-up flex-1 glass rounded-3xl p-5 flex flex-col" style={{ animationDelay: "200ms" }}>
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
+            <span className="text-base">🎭</span> Players
+            <span className="ml-auto rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold text-accent-light">
               {players.length}/{settings.maxPlayers}
             </span>
           </h2>
-          <ul className="flex flex-col gap-2">
-            {players.map((p, i) => (
-              <li
-                key={p.id}
-                className="flex items-center gap-2 rounded-xl bg-surface-light px-3 py-2 text-sm font-medium"
-              >
-                <span className="text-lg">
-                  {i === 0 ? "👑" : "🎭"}
-                </span>
-                <span className="truncate">{p.name}</span>
-              </li>
-            ))}
-            {players.length === 0 && (
-              <li className="animate-bounce-soft text-center text-sm text-foreground/30">
-                Waiting for players...
-              </li>
+          <div className="flex-1 min-h-0">
+            <ul className="flex flex-col gap-2 stagger">
+              {players.map((p, i) => (
+                <li
+                  key={p.id}
+                  className="animate-slide-up flex items-center gap-3 rounded-2xl bg-surface-light/50 px-4 py-3 transition-all hover:bg-surface-lighter/50"
+                >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-main text-lg">
+                    {i === 0 ? "👑" : "🎮"}
+                  </div>
+                  <span className="font-bold">{p.name}</span>
+                  {i === 0 && (
+                    <span className="ml-auto rounded-lg bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
+                      Host
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+            {players.length < 2 && (
+              <div className="mt-4 flex flex-col items-center gap-2 text-center">
+                <div className="animate-float text-3xl">👋</div>
+                <p className="text-sm text-foreground/30">
+                  Share the room code to invite friends!
+                </p>
+              </div>
             )}
-          </ul>
+          </div>
+
+          {/* Start / Wait */}
+          <div className="mt-4 pt-4 border-t border-surface-lighter/50">
+            {isHost ? (
+              <button
+                onClick={onStartGame}
+                disabled={players.length < 2}
+                className="w-full rounded-2xl bg-gradient-main py-4 text-lg font-black text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed animate-pulse-glow"
+              >
+                {players.length < 2 ? "⏳ Waiting for players..." : "🚀 START GAME"}
+              </button>
+            ) : (
+              <div className="flex items-center justify-center gap-2 py-4 text-foreground/40">
+                <div className="animate-wiggle text-xl">⏳</div>
+                <span className="font-medium">Waiting for host...</span>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Chat Panel */}
-        <div className="h-64 w-full rounded-2xl border border-surface-light bg-surface lg:h-auto lg:w-64">
-          <ChatBox
-            entries={chatEntries}
-            onGuess={onChat}
-            disabled={false}
-            placeholder="Say something... 💬"
-          />
+        {/* Right: Chat */}
+        <div className="animate-slide-up glass rounded-3xl p-0 overflow-hidden lg:w-72 h-64 lg:h-auto" style={{ animationDelay: "300ms" }}>
+          <div className="h-full flex flex-col">
+            <div className="px-4 pt-4 pb-2">
+              <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
+                <span className="text-base">💬</span> Chat
+              </h2>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ChatBox
+                entries={chatEntries}
+                onGuess={onChat}
+                disabled={false}
+                placeholder="Say hi! 👋"
+              />
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Start Button */}
-      {isHost ? (
-        <button
-          onClick={onStartGame}
-          disabled={players.length < 2}
-          className="glow-accent rounded-xl bg-gradient-fun px-10 py-4 text-lg font-bold text-white transition-all hover:scale-105 hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-        >
-          🚀 Start Game{" "}
-          {players.length < 2 && (
-            <span className="text-sm font-normal opacity-80">
-              (need 2+ players)
-            </span>
-          )}
-        </button>
-      ) : (
-        <p className="animate-bounce-soft text-foreground/50">
-          ⏳ Waiting for host to start...
-        </p>
-      )}
     </div>
   );
 }
@@ -187,13 +209,22 @@ function SettingRow({
   children,
 }: {
   label: string;
+  icon: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-sm font-medium text-foreground/70">{label}</span>
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-xs font-semibold text-foreground/60">{label}</span>
       {children}
     </div>
+  );
+}
+
+function Chip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-xl bg-surface-lighter px-3 py-1.5 text-xs font-bold text-foreground/50">
+      {children}
+    </span>
   );
 }
 
@@ -215,7 +246,7 @@ function Select({
       value={value}
       onChange={(e) => onChange(Number(e.target.value))}
       disabled={disabled}
-      className="rounded-lg border border-surface-light bg-surface-light px-3 py-1.5 text-sm font-medium text-foreground focus:border-accent focus:outline-none disabled:opacity-40"
+      className="rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-xs font-bold text-foreground focus:border-accent focus:outline-none disabled:opacity-30 transition-colors cursor-pointer"
     >
       {options.map((opt) => (
         <option key={opt} value={opt}>

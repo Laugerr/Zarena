@@ -9,12 +9,12 @@ export default function HomePage() {
   const router = useRouter();
   const [playerName, setPlayerName] = useState(() => generateName());
   const [joinCode, setJoinCode] = useState("");
-  const [showJoinInput, setShowJoinInput] = useState(false);
+  const [mode, setMode] = useState<"idle" | "join">("idle");
   const [error, setError] = useState("");
 
   function handleCreate() {
     if (!playerName.trim()) {
-      setError("Pick a name first!");
+      setError("You need a name to play!");
       return;
     }
     const code = generateRoomCode();
@@ -23,7 +23,7 @@ export default function HomePage() {
 
   function handleJoin() {
     if (!playerName.trim()) {
-      setError("Pick a name first!");
+      setError("You need a name to play!");
       return;
     }
     const code = joinCode.trim().toUpperCase();
@@ -39,21 +39,31 @@ export default function HomePage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 p-4">
+    <main className="relative flex flex-1 flex-col items-center justify-center gap-12 p-6 bg-dots overflow-hidden">
+      {/* Floating decorative elements */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="animate-float absolute top-[15%] left-[10%] text-4xl opacity-20">🎨</div>
+        <div className="animate-float-slow absolute top-[25%] right-[15%] text-3xl opacity-20">✏️</div>
+        <div className="animate-float absolute bottom-[20%] left-[20%] text-3xl opacity-15">🎯</div>
+        <div className="animate-float-slow absolute bottom-[30%] right-[10%] text-4xl opacity-15">🏆</div>
+        <div className="animate-spin-slow absolute top-[10%] right-[30%] text-2xl opacity-10">⭐</div>
+        <div className="animate-float absolute top-[60%] left-[8%] text-2xl opacity-10">🎭</div>
+      </div>
+
       {/* Logo */}
-      <div className="text-center">
-        <h1 className="bg-gradient-fun bg-clip-text text-6xl font-black tracking-tight text-transparent">
+      <div className="animate-slide-up text-center relative z-10">
+        <h1 className="bg-gradient-main bg-clip-text text-7xl font-black tracking-tighter text-transparent animate-gradient sm:text-8xl">
           Zarena
         </h1>
-        <p className="mt-3 text-lg text-foreground/50">
-          🎨 Draw, guess &amp; vibe with friends
+        <p className="mt-4 text-lg text-foreground/50 font-medium">
+          Draw, guess &amp; laugh with friends ✨
         </p>
       </div>
 
-      {/* Name Input */}
-      <div className="flex flex-col items-center gap-3">
-        <label className="text-sm font-medium text-foreground/60">
-          👤 Your name
+      {/* Name Card */}
+      <div className="animate-slide-up glass rounded-3xl p-6 w-full max-w-sm relative z-10" style={{ animationDelay: "100ms" }}>
+        <label className="block text-xs font-bold uppercase tracking-widest text-foreground/40 mb-3">
+          Your identity
         </label>
         <div className="flex items-center gap-2">
           <input
@@ -64,12 +74,12 @@ export default function HomePage() {
               setError("");
             }}
             maxLength={16}
-            className="w-56 rounded-xl border-2 border-surface-light bg-surface px-4 py-3 text-center text-lg font-semibold text-foreground placeholder:text-foreground/30 focus:border-accent focus:outline-none"
+            className="flex-1 rounded-2xl border-2 border-surface-lighter bg-surface px-4 py-3.5 text-center text-lg font-bold text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none transition-colors"
             placeholder="Enter name..."
           />
           <button
             onClick={rollName}
-            className="flex h-12 w-12 items-center justify-center rounded-xl border-2 border-surface-light bg-surface text-xl transition-all hover:border-accent hover:scale-110"
+            className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl border-2 border-surface-lighter bg-surface text-xl transition-all hover:border-accent hover:scale-110 hover:rotate-12 active:scale-95"
             title="Random name"
           >
             🎲
@@ -78,23 +88,29 @@ export default function HomePage() {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex flex-col items-center gap-4">
+      <div className="animate-slide-up flex flex-col items-center gap-4 w-full max-w-sm relative z-10" style={{ animationDelay: "200ms" }}>
         <button
           onClick={handleCreate}
-          className="glow-accent w-72 rounded-xl bg-gradient-fun px-6 py-4 text-lg font-bold text-white transition-all hover:scale-105 hover:brightness-110"
+          className="group glow-purple w-full rounded-2xl bg-gradient-main p-[2px] transition-all hover:scale-[1.02] active:scale-[0.98]"
         >
-          🚀 Create Room
+          <div className="flex items-center justify-center gap-3 rounded-[14px] bg-surface/50 px-6 py-4 transition-all group-hover:bg-transparent">
+            <span className="text-2xl">🚀</span>
+            <span className="text-lg font-bold">Create Room</span>
+          </div>
         </button>
 
-        {!showJoinInput ? (
+        {mode === "idle" ? (
           <button
-            onClick={() => setShowJoinInput(true)}
-            className="w-72 rounded-xl border-2 border-surface-light bg-surface px-6 py-4 text-lg font-bold transition-all hover:border-accent hover:scale-105"
+            onClick={() => setMode("join")}
+            className="w-full rounded-2xl border-2 border-surface-lighter bg-surface px-6 py-4 text-lg font-bold transition-all hover:border-accent/50 hover:bg-surface-light card-hover"
           >
-            🔗 Join Room
+            <span className="flex items-center justify-center gap-3">
+              <span className="text-2xl">🔗</span>
+              Join Room
+            </span>
           </button>
         ) : (
-          <div className="flex flex-col items-center gap-3">
+          <div className="w-full animate-slide-up flex flex-col gap-3">
             <input
               type="text"
               value={joinCode}
@@ -105,23 +121,30 @@ export default function HomePage() {
               onKeyDown={(e) => e.key === "Enter" && handleJoin()}
               placeholder="ROOM CODE"
               maxLength={6}
-              className="w-72 rounded-xl border-2 border-surface-light bg-surface px-4 py-4 text-center text-xl font-mono font-bold uppercase tracking-[0.3em] text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none"
+              className="w-full rounded-2xl border-2 border-surface-lighter bg-surface px-4 py-4 text-center text-2xl font-black font-mono uppercase tracking-[0.4em] text-foreground placeholder:text-foreground/15 focus:border-cyan focus:outline-none transition-colors"
               autoFocus
             />
             <button
               onClick={handleJoin}
-              className="glow-success w-72 rounded-xl bg-success px-6 py-4 text-lg font-bold text-background transition-all hover:scale-105 hover:brightness-110"
+              className="glow-cyan w-full rounded-2xl bg-gradient-cool px-6 py-4 text-lg font-bold text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              ✨ Join
+              ✨ Join Game
+            </button>
+            <button
+              onClick={() => setMode("idle")}
+              className="text-sm text-foreground/30 hover:text-foreground/60 transition-colors"
+            >
+              ← Back
             </button>
           </div>
         )}
       </div>
 
+      {/* Error Toast */}
       {error && (
-        <p className="rounded-lg bg-danger/10 px-4 py-2 text-sm font-medium text-danger">
-          {error}
-        </p>
+        <div className="animate-slide-up fixed bottom-6 rounded-2xl bg-danger/20 border border-danger/30 px-5 py-3 text-sm font-semibold text-danger backdrop-blur-sm">
+          ⚠️ {error}
+        </div>
       )}
     </main>
   );

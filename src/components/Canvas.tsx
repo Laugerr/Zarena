@@ -12,17 +12,21 @@ type CanvasProps = {
 
 const COLORS = [
   "#000000", "#FFFFFF", "#EF4444", "#F97316", "#EAB308",
-  "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899", "#78716C",
+  "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280",
+  "#7C3AED", "#06B6D4", "#84CC16", "#F59E0B", "#14B8A6",
 ];
-const SIZES = [4, 8, 16, 32];
+const SIZES = [3, 6, 12, 24, 40];
 
 export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawing = useRef(false);
   const currentPoints = useRef<{ x: number; y: number }[]>([]);
   const [color, setColor] = useState("#000000");
-  const [size, setSize] = useState(8);
+  const [size, setSize] = useState(6);
+  const [isEraser, setIsEraser] = useState(false);
   const lastStrokeCount = useRef(0);
+
+  const activeColor = isEraser ? "#FFFFFF" : color;
 
   const redraw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -94,7 +98,7 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     if (!ctx) return;
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, size / 2, 0, Math.PI * 2);
-    ctx.fillStyle = color;
+    ctx.fillStyle = activeColor;
     ctx.fill();
   }
 
@@ -117,7 +121,7 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
     ctx.lineTo(to.x, to.y);
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = activeColor;
     ctx.lineWidth = size;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
@@ -131,7 +135,7 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     if (currentPoints.current.length > 0) {
       const stroke: Stroke = {
         points: [...currentPoints.current],
-        color,
+        color: activeColor,
         size,
       };
       onStroke(stroke);
@@ -140,13 +144,13 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
   }
 
   return (
-    <div className="flex flex-col items-center gap-3">
+    <div className="flex flex-col items-center gap-3 h-full">
       <canvas
         ref={canvasRef}
         width={800}
         height={600}
-        className="w-full max-w-[800px] rounded-2xl border-2 border-surface-light bg-white touch-none shadow-lg"
-        style={{ aspectRatio: "4/3", cursor: isDrawer ? "crosshair" : "default" }}
+        className="w-full max-w-[800px] flex-1 rounded-2xl border-2 border-surface-lighter bg-white touch-none"
+        style={{ aspectRatio: "4/3", cursor: isDrawer ? (isEraser ? "cell" : "crosshair") : "default" }}
         onMouseDown={handleStart}
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
@@ -156,55 +160,65 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
         onTouchEnd={handleEnd}
       />
 
-      {/* Drawing Tools */}
+      {/* Toolbar */}
       {isDrawer && (
-        <div className="flex flex-wrap items-center justify-center gap-4 rounded-2xl border border-surface-light bg-surface px-5 py-3">
+        <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-4 py-3">
           {/* Colors */}
-          <div className="flex gap-1.5">
+          <div className="flex flex-wrap gap-1.5">
             {COLORS.map((c) => (
               <button
                 key={c}
-                onClick={() => setColor(c)}
-                className={`h-7 w-7 rounded-full border-2 transition-all ${
-                  color === c
-                    ? "scale-125 border-accent ring-2 ring-accent/30"
-                    : "border-surface-light hover:scale-110"
+                onClick={() => { setColor(c); setIsEraser(false); }}
+                className={`h-6 w-6 rounded-full border-2 transition-all ${
+                  color === c && !isEraser
+                    ? "scale-125 border-foreground ring-2 ring-foreground/20"
+                    : "border-transparent hover:scale-110"
                 }`}
                 style={{ backgroundColor: c }}
               />
             ))}
           </div>
 
-          {/* Divider */}
-          <div className="h-6 w-px bg-surface-light" />
+          <div className="h-6 w-px bg-surface-lighter" />
 
           {/* Sizes */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1">
             {SIZES.map((s) => (
               <button
                 key={s}
                 onClick={() => setSize(s)}
-                className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
                   size === s
-                    ? "bg-accent/20 border border-accent"
-                    : "bg-surface-light hover:bg-surface-light/80"
+                    ? "bg-accent/30 border border-accent"
+                    : "hover:bg-surface-lighter"
                 }`}
               >
                 <div
                   className="rounded-full bg-foreground"
-                  style={{ width: Math.min(s, 20), height: Math.min(s, 20) }}
+                  style={{ width: Math.min(s * 0.7, 18), height: Math.min(s * 0.7, 18) }}
                 />
               </button>
             ))}
           </div>
 
-          {/* Divider */}
-          <div className="h-6 w-px bg-surface-light" />
+          <div className="h-6 w-px bg-surface-lighter" />
+
+          {/* Eraser */}
+          <button
+            onClick={() => setIsEraser(!isEraser)}
+            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
+              isEraser
+                ? "bg-pink/20 text-pink border border-pink/30"
+                : "bg-surface-lighter text-foreground/50 hover:text-foreground"
+            }`}
+          >
+            🧹 Eraser
+          </button>
 
           {/* Clear */}
           <button
             onClick={onClear}
-            className="rounded-xl bg-danger/10 px-4 py-2 text-sm font-bold text-danger transition-all hover:bg-danger/20"
+            className="rounded-xl bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger transition-all hover:bg-danger/20 active:scale-90"
           >
             🗑️ Clear
           </button>
