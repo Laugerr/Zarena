@@ -8,7 +8,7 @@ type GeoStreetViewProps = {
 };
 
 export default function GeoStreetView({ lat, lng, heading, apiKey }: GeoStreetViewProps) {
-  const src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lng}&heading=${heading}&pitch=0&fov=90`;
+  const src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lng}&heading=${heading}&pitch=0&fov=90&radius=50000`;
 
   return (
     <div className="relative w-full h-full rounded-3xl overflow-hidden glass">

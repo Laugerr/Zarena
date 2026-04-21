@@ -26,7 +26,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   gameMode: "draw",
   wordCount: 3,
   hints: 2,
-  geoTime: 30,
+  geoTime: 60,
 };
 
 /** Game phase */
@@ -89,7 +89,8 @@ export type ClientMessage =
   | { type: "clear-canvas" }
   | { type: "guess"; text: string }
   | { type: "chat"; text: string }
-  | { type: "geo-guess"; position: LatLng };
+  | { type: "geo-guess"; position: LatLng }
+  | { type: "end-game" };
 
 /** Messages sent from PartyKit server to clients */
 export type ServerMessage =

@@ -1,35 +1,73 @@
 import type { GeoLocation } from "./types";
 
-/** Curated locations for GeoGuess — famous/recognizable spots worldwide */
-export const GEO_LOCATIONS: GeoLocation[] = [
-  { id: "eiffel", position: { lat: 48.8584, lng: 2.2945 }, heading: 0, name: "Eiffel Tower, Paris" },
-  { id: "colosseum", position: { lat: 41.8902, lng: 12.4922 }, heading: 90, name: "Colosseum, Rome" },
-  { id: "taj-mahal", position: { lat: 27.1751, lng: 78.0421 }, heading: 180, name: "Taj Mahal, India" },
-  { id: "statue-liberty", position: { lat: 40.6892, lng: -74.0445 }, heading: 0, name: "Statue of Liberty, NYC" },
-  { id: "big-ben", position: { lat: 51.5007, lng: -0.1246 }, heading: 270, name: "Big Ben, London" },
-  { id: "sydney-opera", position: { lat: -33.8568, lng: 151.2153 }, heading: 330, name: "Sydney Opera House" },
-  { id: "machu-picchu", position: { lat: -13.1631, lng: -72.5450 }, heading: 45, name: "Machu Picchu, Peru" },
-  { id: "great-wall", position: { lat: 40.4319, lng: 116.5704 }, heading: 0, name: "Great Wall of China" },
-  { id: "christ-redeemer", position: { lat: -22.9519, lng: -43.2105 }, heading: 180, name: "Christ the Redeemer, Rio" },
-  { id: "golden-gate", position: { lat: 37.8199, lng: -122.4783 }, heading: 150, name: "Golden Gate Bridge, SF" },
-  { id: "pyramids", position: { lat: 29.9792, lng: 31.1342 }, heading: 200, name: "Pyramids of Giza, Egypt" },
-  { id: "mount-fuji", position: { lat: 35.3606, lng: 138.7274 }, heading: 0, name: "Mount Fuji, Japan" },
-  { id: "santorini", position: { lat: 36.3932, lng: 25.4615 }, heading: 270, name: "Santorini, Greece" },
-  { id: "niagara", position: { lat: 43.0962, lng: -79.0377 }, heading: 180, name: "Niagara Falls" },
-  { id: "petra", position: { lat: 30.3285, lng: 35.4444 }, heading: 0, name: "Petra, Jordan" },
-  { id: "angkor-wat", position: { lat: 13.4125, lng: 103.8670 }, heading: 270, name: "Angkor Wat, Cambodia" },
-  { id: "times-square", position: { lat: 40.7580, lng: -73.9855 }, heading: 0, name: "Times Square, NYC" },
-  { id: "burj-khalifa", position: { lat: 25.1972, lng: 55.2744 }, heading: 0, name: "Burj Khalifa, Dubai" },
-  { id: "sagrada-familia", position: { lat: 41.4036, lng: 2.1744 }, heading: 135, name: "Sagrada Familia, Barcelona" },
-  { id: "kremlin", position: { lat: 55.7520, lng: 37.6175 }, heading: 180, name: "Kremlin, Moscow" },
-  { id: "acropolis", position: { lat: 37.9715, lng: 23.7257 }, heading: 0, name: "Acropolis, Athens" },
-  { id: "stonehenge", position: { lat: 51.1789, lng: -1.8262 }, heading: 90, name: "Stonehenge, England" },
-  { id: "venice", position: { lat: 45.4340, lng: 12.3388 }, heading: 0, name: "Grand Canal, Venice" },
-  { id: "tower-pisa", position: { lat: 43.7230, lng: 10.3966 }, heading: 315, name: "Tower of Pisa, Italy" },
-  { id: "hagia-sophia", position: { lat: 41.0086, lng: 28.9802 }, heading: 45, name: "Hagia Sophia, Istanbul" },
-  { id: "table-mountain", position: { lat: -33.9628, lng: 18.4098 }, heading: 0, name: "Table Mountain, Cape Town" },
-  { id: "shibuya", position: { lat: 35.6595, lng: 139.7004 }, heading: 0, name: "Shibuya Crossing, Tokyo" },
-  { id: "chichen-itza", position: { lat: 20.6843, lng: -88.5678 }, heading: 0, name: "Chichén Itzá, Mexico" },
-  { id: "uluru", position: { lat: -25.3444, lng: 131.0369 }, heading: 90, name: "Uluru, Australia" },
-  { id: "moai", position: { lat: -27.1127, lng: -109.3497 }, heading: 270, name: "Easter Island, Chile" },
+/**
+ * Weighted regions of the world with Street View coverage.
+ * Each region has a bounding box and a weight (higher = more likely to be picked).
+ * Weights are roughly proportional to Street View coverage density.
+ */
+const REGIONS = [
+  // Europe (great coverage)
+  { name: "Western Europe", latMin: 42, latMax: 55, lngMin: -5, lngMax: 15, weight: 15 },
+  { name: "Northern Europe", latMin: 55, latMax: 70, lngMin: 5, lngMax: 30, weight: 8 },
+  { name: "Southern Europe", latMin: 36, latMax: 44, lngMin: -10, lngMax: 28, weight: 10 },
+  { name: "Eastern Europe", latMin: 44, latMax: 56, lngMin: 14, lngMax: 40, weight: 8 },
+
+  // North America
+  { name: "US East", latMin: 30, latMax: 45, lngMin: -90, lngMax: -70, weight: 12 },
+  { name: "US West", latMin: 32, latMax: 48, lngMin: -125, lngMax: -100, weight: 10 },
+  { name: "US Central", latMin: 30, latMax: 48, lngMin: -100, lngMax: -90, weight: 6 },
+  { name: "Canada", latMin: 43, latMax: 55, lngMin: -130, lngMax: -60, weight: 5 },
+  { name: "Mexico", latMin: 16, latMax: 32, lngMin: -117, lngMax: -87, weight: 6 },
+
+  // South America
+  { name: "Brazil", latMin: -30, latMax: 0, lngMin: -55, lngMax: -35, weight: 8 },
+  { name: "Argentina/Chile", latMin: -50, latMax: -22, lngMin: -73, lngMax: -55, weight: 5 },
+  { name: "Colombia/Peru", latMin: -15, latMax: 10, lngMin: -80, lngMax: -67, weight: 4 },
+
+  // Asia
+  { name: "Japan", latMin: 31, latMax: 43, lngMin: 130, lngMax: 145, weight: 8 },
+  { name: "South Korea", latMin: 34, latMax: 38, lngMin: 126, lngMax: 130, weight: 4 },
+  { name: "Southeast Asia", latMin: -8, latMax: 20, lngMin: 96, lngMax: 120, weight: 7 },
+  { name: "India", latMin: 8, latMax: 32, lngMin: 68, lngMax: 90, weight: 6 },
+  { name: "Turkey/Middle East", latMin: 30, latMax: 42, lngMin: 26, lngMax: 45, weight: 5 },
+  { name: "Russia West", latMin: 50, latMax: 60, lngMin: 30, lngMax: 60, weight: 4 },
+
+  // Africa
+  { name: "South Africa", latMin: -35, latMax: -22, lngMin: 17, lngMax: 33, weight: 4 },
+  { name: "East Africa", latMin: -10, latMax: 5, lngMin: 28, lngMax: 42, weight: 3 },
+  { name: "North Africa", latMin: 25, latMax: 37, lngMin: -10, lngMax: 12, weight: 3 },
+  { name: "West Africa", latMin: 4, latMax: 15, lngMin: -17, lngMax: 10, weight: 3 },
+
+  // Oceania
+  { name: "Australia East", latMin: -38, latMax: -20, lngMin: 140, lngMax: 155, weight: 6 },
+  { name: "Australia West", latMin: -35, latMax: -20, lngMin: 115, lngMax: 140, weight: 3 },
+  { name: "New Zealand", latMin: -47, latMax: -35, lngMin: 166, lngMax: 178, weight: 3 },
 ];
+
+const totalWeight = REGIONS.reduce((sum, r) => sum + r.weight, 0);
+
+/** Generate a random GeoLocation somewhere in the world (biased toward areas with Street View coverage) */
+export function generateRandomLocation(): GeoLocation {
+  // Pick a weighted random region
+  let roll = Math.random() * totalWeight;
+  let region = REGIONS[0];
+  for (const r of REGIONS) {
+    roll -= r.weight;
+    if (roll <= 0) {
+      region = r;
+      break;
+    }
+  }
+
+  // Random point within the region
+  const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
+  const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
+  const heading = Math.floor(Math.random() * 360);
+
+  return {
+    id: `geo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    position: { lat: Math.round(lat * 10000) / 10000, lng: Math.round(lng * 10000) / 10000 },
+    heading,
+    name: region.name,
+  };
+}

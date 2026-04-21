@@ -8,19 +8,19 @@ type WordPickerProps = {
 
 export default function WordPicker({ words, onPick, timeLeft }: WordPickerProps) {
   return (
-    <div className="flex flex-col items-center gap-8 p-8 bg-dots">
+    <div className="flex flex-col items-center gap-6 sm:gap-8 p-4 sm:p-8 bg-dots">
       <div className="animate-slide-up text-center">
-        <div className="animate-float text-5xl mb-4">✏️</div>
-        <h2 className="text-3xl font-black">Pick your word!</h2>
-        <p className="mt-2 text-foreground/40 text-sm">What do you want to draw?</p>
+        <div className="animate-float text-4xl sm:text-5xl mb-3 sm:mb-4">✏️</div>
+        <h2 className="text-2xl sm:text-3xl font-black">Pick your word!</h2>
+        <p className="mt-2 text-foreground/40 text-xs sm:text-sm">What do you want to draw?</p>
       </div>
 
-      <div className="flex flex-wrap justify-center gap-4 stagger">
+      <div className="flex flex-wrap justify-center gap-3 sm:gap-4 stagger w-full max-w-md">
         {words.map((word) => (
           <button
             key={word}
             onClick={() => onPick(word)}
-            className="animate-slide-up glass rounded-2xl px-8 py-5 text-xl font-black transition-all hover:scale-110 hover:glow-purple hover:border-accent active:scale-95 card-hover"
+            className="animate-slide-up glass rounded-2xl px-5 py-3 sm:px-8 sm:py-5 text-base sm:text-xl font-black transition-all hover:scale-110 hover:glow-purple hover:border-accent active:scale-95 card-hover max-w-full truncate"
           >
             {word}
           </button>
@@ -28,16 +28,16 @@ export default function WordPicker({ words, onPick, timeLeft }: WordPickerProps)
       </div>
 
       <div className="flex items-center gap-3">
-        <div className={`flex h-14 w-14 items-center justify-center rounded-full ${
+        <div className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-full ${
           timeLeft <= 5 ? "bg-danger/20 animate-pulse-urgent" : "bg-warning/20"
         }`}>
-          <span className={`text-2xl font-black ${
+          <span className={`text-xl sm:text-2xl font-black ${
             timeLeft <= 5 ? "text-danger" : "text-warning"
           }`}>
             {timeLeft}
           </span>
         </div>
-        <span className="text-sm text-foreground/30">seconds to pick</span>
+        <span className="text-xs sm:text-sm text-foreground/30">seconds to pick</span>
       </div>
     </div>
   );

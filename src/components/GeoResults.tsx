@@ -35,19 +35,19 @@ export default function GeoResults({ results, location, scores, myId }: GeoResul
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col gap-3 p-3 bg-gradient-game min-h-0">
+    <div className="flex flex-1 min-h-0 flex-col gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-game overflow-hidden">
       {/* Location name reveal */}
-      <div className="glass rounded-2xl px-5 py-3 text-center animate-slide-up">
-        <span className="text-xs text-foreground/40 uppercase tracking-wider">The location was</span>
-        <h2 className="text-xl font-black bg-gradient-to-r from-cyan via-accent-light to-pink bg-clip-text text-transparent mt-1">
+      <div className="glass rounded-2xl px-4 sm:px-5 py-2 sm:py-3 text-center animate-slide-up shrink-0">
+        <span className="text-[10px] sm:text-xs text-foreground/40 uppercase tracking-wider">The location was</span>
+        <h2 className="text-lg sm:text-xl font-black bg-gradient-to-r from-cyan via-accent-light to-pink bg-clip-text text-transparent mt-0.5 sm:mt-1">
           {location.name}
         </h2>
       </div>
 
       {/* Main area: Map + Leaderboard */}
-      <div className="flex flex-1 gap-3 min-h-0 flex-col lg:flex-row">
+      <div className="flex flex-1 gap-2 sm:gap-3 min-h-0 flex-col lg:flex-row overflow-hidden">
         {/* Results map */}
-        <div className="flex-1 min-h-0 glass rounded-2xl overflow-hidden">
+        <div className="flex-1 min-h-[200px] sm:min-h-0 glass rounded-2xl overflow-hidden">
           {mounted ? (
             <MapContainer
               center={[location.position.lat, location.position.lng]}
@@ -105,7 +105,7 @@ export default function GeoResults({ results, location, scores, myId }: GeoResul
         </div>
 
         {/* Leaderboard */}
-        <div className="glass rounded-2xl p-4 lg:w-72 shrink-0 overflow-y-auto">
+        <div className="glass rounded-2xl p-3 sm:p-4 lg:w-72 shrink-0 overflow-y-auto max-h-48 sm:max-h-60 lg:max-h-none">
           <h3 className="text-xs font-bold uppercase tracking-wider text-foreground/40 mb-3">
             Round Results
           </h3>

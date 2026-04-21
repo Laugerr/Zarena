@@ -26,6 +26,13 @@ import GeoStreetView from "@/components/GeoStreetView";
 import GeoGuessMap from "@/components/GeoGuessMap";
 import GeoResults from "@/components/GeoResults";
 
+function formatTimer(seconds: number): string {
+  if (seconds < 60) return String(seconds);
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
   const searchParams = useSearchParams();
@@ -322,7 +329,7 @@ export default function RoomPage() {
   // --- PICKING PHASE (drawer picks a word) ---
   if (phase === "picking" && isDrawer && wordChoices.length > 0) {
     return (
-      <main className="flex flex-1 flex-col items-center justify-center">
+      <main className="flex flex-1 min-h-0 flex-col items-center justify-center overflow-y-auto">
         <WordPicker
           words={wordChoices}
           onPick={(word) => send({ type: "pick-word", word })}
@@ -336,9 +343,9 @@ export default function RoomPage() {
   if (phase === "picking") {
     const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-8 bg-dots">
+      <main className="flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-8 bg-dots overflow-y-auto p-4">
         <div className="relative">
-          <div className="animate-float text-7xl">🎨</div>
+          <div className="animate-float text-5xl sm:text-7xl">🎨</div>
           <div className="absolute -top-2 -right-2 animate-spin-slow text-2xl">✨</div>
         </div>
         <div className="text-center animate-slide-up">
@@ -360,15 +367,15 @@ export default function RoomPage() {
   if (phase === "gameEnd") {
     const sorted = [...players].sort((a, b) => b.score - a.score);
     return (
-      <main className="flex flex-1 flex-col items-center justify-center gap-10 p-4 bg-dots overflow-hidden">
+      <main className="flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-10 p-4 bg-dots overflow-y-auto">
         {/* Trophy animation */}
         <div className="relative animate-slide-up">
-          <div className="text-7xl animate-float">🏆</div>
+          <div className="text-5xl sm:text-7xl animate-float">🏆</div>
           <div className="absolute -top-3 -left-3 text-2xl animate-spin-slow">⭐</div>
           <div className="absolute -bottom-2 -right-3 text-xl animate-float-slow">✨</div>
         </div>
 
-        <h1 className="animate-slide-up bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-4xl font-black text-transparent sm:text-5xl">
+        <h1 className="animate-slide-up bg-gradient-to-r from-pink-400 to-amber-400 bg-clip-text text-3xl font-black text-transparent sm:text-4xl md:text-5xl">
           Game Over!
         </h1>
 
@@ -426,46 +433,54 @@ export default function RoomPage() {
     const totalPlayers = players.length;
 
     return (
-      <main className="flex flex-1 flex-col gap-3 p-3 bg-gradient-game min-h-0">
+      <main className="flex flex-1 min-h-0 flex-col gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-game overflow-hidden">
         {/* Top bar */}
-        <div className="glass flex items-center justify-between rounded-2xl px-5 py-3">
-          <div className="flex items-center gap-3">
-            <span className="rounded-xl bg-accent/20 px-3 py-1 text-xs font-black text-accent-light">
+        <div className="glass flex items-center justify-between rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {isHost && (
+              <button
+                onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
+                className="rounded-lg bg-danger/20 px-2 py-1 text-[10px] sm:text-xs font-bold text-danger transition-all hover:bg-danger/30 active:scale-90"
+              >
+                ✕
+              </button>
+            )}
+            <span className="rounded-xl bg-accent/20 px-2 sm:px-3 py-1 text-xs font-black text-accent-light">
               {game.round}/{game.totalRounds}
             </span>
-            <span className="text-xs text-foreground/30">
+            <span className="text-xs text-foreground/30 hidden sm:inline">
               🌍 Where is this?
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-foreground/40">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="text-[10px] sm:text-xs text-foreground/40">
               {guessedCount}/{totalPlayers} guessed
             </span>
-            <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
-              game.timeLeft <= 5
+            <div className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl ${
+              game.timeLeft <= 10
                 ? "bg-danger/20 animate-pulse-urgent"
-                : game.timeLeft <= 10
+                : game.timeLeft <= 30
                 ? "bg-warning/20"
                 : "bg-surface-lighter"
             }`}>
-              <span className={`text-lg font-black ${
-                game.timeLeft <= 5
+              <span className={`text-sm sm:text-base font-black ${
+                game.timeLeft <= 10
                   ? "text-danger"
-                  : game.timeLeft <= 10
+                  : game.timeLeft <= 30
                   ? "text-warning"
                   : "text-foreground"
               }`}>
-                {game.timeLeft}
+                {formatTimer(game.timeLeft)}
               </span>
             </div>
           </div>
         </div>
 
         {/* Street View + Map */}
-        <div className="flex flex-1 gap-3 min-h-0 flex-col lg:flex-row">
+        <div className="flex flex-1 gap-2 sm:gap-3 min-h-0 flex-col lg:flex-row overflow-hidden">
           {/* Street View */}
-          <div className="flex-1 min-h-0 min-h-[250px]">
+          <div className="flex-[2] min-h-0 min-h-[180px] sm:min-h-[250px]">
             <GeoStreetView
               lat={game.geoLocation.lat}
               lng={game.geoLocation.lng}
@@ -475,7 +490,7 @@ export default function RoomPage() {
           </div>
 
           {/* Guess Map */}
-          <div className="lg:w-80 h-72 lg:h-auto shrink-0">
+          <div className="flex-1 min-h-[180px] lg:max-w-80 lg:min-h-0">
             <GeoGuessMap
               onGuess={(position) => {
                 setHasGeoGuessed(true);
@@ -494,15 +509,23 @@ export default function RoomPage() {
   const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
 
   return (
-    <main className="flex flex-1 flex-col gap-3 p-3 bg-gradient-game">
+    <main className="flex flex-1 min-h-0 flex-col gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-game overflow-hidden">
       {/* Top Bar */}
-      <div className="glass flex items-center justify-between rounded-2xl px-5 py-3">
-        <div className="flex items-center gap-3">
-          <span className="rounded-xl bg-accent/20 px-3 py-1 text-xs font-black text-accent-light">
+      <div className="glass flex items-center justify-between rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
+        <div className="flex items-center gap-2 sm:gap-3">
+          {isHost && (
+            <button
+              onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
+              className="rounded-lg bg-danger/20 px-2 py-1 text-[10px] sm:text-xs font-bold text-danger transition-all hover:bg-danger/30 active:scale-90"
+            >
+              ✕
+            </button>
+          )}
+          <span className="rounded-xl bg-accent/20 px-2 sm:px-3 py-1 text-xs font-black text-accent-light">
             {game.round}/{game.totalRounds}
           </span>
           {!isDrawer && phase === "drawing" && (
-            <span className="text-xs text-foreground/30">
+            <span className="text-xs text-foreground/30 hidden sm:inline">
               🎨 <span className="text-pink">{drawerName}</span>
             </span>
           )}
@@ -525,13 +548,13 @@ export default function RoomPage() {
               </span>
             </div>
           ) : (
-            <div className="flex flex-wrap items-center justify-center gap-1 max-w-[60vw]">
+            <div className="flex flex-wrap items-center justify-center gap-0.5 sm:gap-1 max-w-[50vw] sm:max-w-[60vw]">
               {(game.hint ?? "_ ".repeat(game.wordLength ?? 5).trim())
                 .split(" ")
                 .map((ch, i) => (
                   <span
                     key={i}
-                    className={`flex h-7 w-5 sm:h-8 sm:w-6 items-center justify-center rounded text-sm sm:text-base font-black ${
+                    className={`flex h-6 w-4 sm:h-8 sm:w-6 items-center justify-center rounded text-xs sm:text-base font-black ${
                       ch === "_"
                         ? "bg-surface-lighter text-foreground/20"
                         : "bg-accent/20 text-accent-light"
@@ -545,14 +568,14 @@ export default function RoomPage() {
         </div>
 
         {/* Timer */}
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+        <div className={`flex h-9 w-9 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${
           game.timeLeft <= 10
             ? "bg-danger/20 animate-pulse-urgent"
             : game.timeLeft <= 20
             ? "bg-warning/20"
             : "bg-surface-lighter"
         }`}>
-          <span className={`text-lg font-black ${
+          <span className={`text-base sm:text-lg font-black ${
             game.timeLeft <= 10
               ? "text-danger"
               : game.timeLeft <= 20
@@ -565,9 +588,9 @@ export default function RoomPage() {
       </div>
 
       {/* Main Game Area */}
-      <div className="flex flex-1 gap-3 min-h-0">
+      <div className="flex flex-1 gap-2 sm:gap-3 min-h-0 overflow-hidden">
         {/* Scoreboard */}
-        <div className="hidden w-48 lg:block">
+        <div className="hidden w-48 lg:block shrink-0">
           <Scoreboard
             players={players}
             currentDrawer={game.currentDrawer}
@@ -576,7 +599,7 @@ export default function RoomPage() {
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 min-w-0 flex flex-col">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
           <Canvas
             isDrawer={isDrawer && phase === "drawing"}
             strokes={strokes}
@@ -586,7 +609,7 @@ export default function RoomPage() {
         </div>
 
         {/* Chat */}
-        <div className="hidden w-60 h-full glass rounded-3xl lg:flex lg:flex-col overflow-hidden">
+        <div className="hidden w-60 shrink-0 glass rounded-3xl lg:flex lg:flex-col overflow-hidden">
           <div className="shrink-0 px-4 pt-3 pb-1">
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">
               {isDrawer ? "Chat" : "Guess here"}
@@ -604,7 +627,7 @@ export default function RoomPage() {
       </div>
 
       {/* Mobile Chat */}
-      <div className="h-44 lg:hidden glass rounded-3xl overflow-hidden">
+      <div className="h-36 sm:h-44 shrink-0 lg:hidden glass rounded-3xl overflow-hidden">
         <ChatBox
           entries={chatEntries}
           onGuess={(text) => send({ type: "guess", text })}

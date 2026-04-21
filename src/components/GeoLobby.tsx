@@ -16,7 +16,7 @@ type GeoLobbyProps = {
   onBack: () => void;
 };
 
-const GEO_TIME_OPTIONS = [15, 20, 30, 45, 60];
+const GEO_TIME_OPTIONS = [15, 20, 30, 45, 60, 90, 120, 180, 240];
 const ROUNDS_OPTIONS = [1, 2, 3, 4, 5];
 const MAX_PLAYERS_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 10, 12];
 
@@ -44,7 +44,7 @@ export default function GeoLobby({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots overflow-hidden">
+    <div className="flex flex-1 min-h-0 flex-col items-center gap-4 sm:gap-6 p-3 sm:p-4 pt-4 sm:pt-6 bg-dots overflow-y-auto">
       {/* Header */}
       <div className="animate-slide-up text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
@@ -78,7 +78,7 @@ export default function GeoLobby({
       {/* Main Content */}
       <div className="flex w-full max-w-5xl flex-1 flex-col gap-4 lg:flex-row min-h-0">
         {/* Left: Settings */}
-        <div className="animate-slide-up glass rounded-3xl p-5 lg:w-72" style={{ animationDelay: "100ms" }}>
+        <div className="animate-slide-up glass rounded-3xl p-4 sm:p-5 lg:w-72" style={{ animationDelay: "100ms" }}>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
             <span className="text-base">⚙️</span> Settings
             {!isHost && <span className="text-[10px] text-foreground/30 normal-case">(host only)</span>}
@@ -93,12 +93,11 @@ export default function GeoLobby({
               />
             </SettingRow>
             <SettingRow label="⏱️ Guess Time">
-              <Select
+              <TimeSelect
                 options={GEO_TIME_OPTIONS}
                 value={settings.geoTime}
                 onChange={(v) => updateSetting("geoTime", v)}
                 disabled={!isHost}
-                suffix="s"
               />
             </SettingRow>
             <SettingRow label="🔄 Rounds">
@@ -138,7 +137,7 @@ export default function GeoLobby({
         </div>
 
         {/* Center: Players */}
-        <div className="animate-slide-up flex-1 glass rounded-3xl p-5 flex flex-col h-80 lg:h-auto" style={{ animationDelay: "200ms" }}>
+        <div className="animate-slide-up flex-1 glass rounded-3xl p-4 sm:p-5 flex flex-col max-h-72 sm:max-h-80 lg:max-h-none" style={{ animationDelay: "200ms" }}>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
             <span className="text-base">🎭</span> Players
             <span className="ml-auto rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold text-accent-light">
@@ -186,7 +185,7 @@ export default function GeoLobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 h-80 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
+        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 max-h-60 sm:max-h-80 lg:max-h-none lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
           <div className="shrink-0 px-4 pt-4 pb-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
               <span className="text-base">💬</span> Chat
@@ -244,6 +243,40 @@ function Select({
       {options.map((opt) => (
         <option key={opt} value={opt}>
           {opt}{suffix}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function formatTime(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return s > 0 ? `${m}m ${s}s` : `${m}m`;
+}
+
+function TimeSelect({
+  options,
+  value,
+  onChange,
+  disabled,
+}: {
+  options: number[];
+  value: number;
+  onChange: (value: number) => void;
+  disabled: boolean;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(Number(e.target.value))}
+      disabled={disabled}
+      className="w-full rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-center text-xs font-bold text-foreground focus:border-accent focus:outline-none disabled:opacity-30 transition-colors cursor-pointer"
+    >
+      {options.map((opt) => (
+        <option key={opt} value={opt}>
+          {formatTime(opt)}
         </option>
       ))}
     </select>

@@ -144,13 +144,13 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 h-full">
+    <div className="flex flex-col items-center gap-2 sm:gap-3 h-full min-h-0 overflow-hidden">
       <canvas
         ref={canvasRef}
         width={800}
         height={600}
-        className="w-full max-w-[800px] flex-1 rounded-2xl border-2 border-surface-lighter bg-white touch-none"
-        style={{ aspectRatio: "4/3", cursor: isDrawer ? (isEraser ? "cell" : "crosshair") : "default" }}
+        className="w-full max-w-[800px] min-h-0 flex-1 rounded-2xl border-2 border-surface-lighter bg-white touch-none object-contain"
+        style={{ aspectRatio: "4/3", maxHeight: "100%", cursor: isDrawer ? (isEraser ? "cell" : "crosshair") : "default" }}
         onMouseDown={handleStart}
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
@@ -162,7 +162,7 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
 
       {/* Toolbar */}
       {isDrawer && (
-        <div className="glass flex flex-wrap items-center justify-center gap-3 rounded-2xl px-4 py-3">
+        <div className="glass flex flex-wrap items-center justify-center gap-2 sm:gap-3 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shrink-0">
           {/* Colors */}
           <div className="flex flex-wrap gap-1.5">
             {COLORS.map((c) => (

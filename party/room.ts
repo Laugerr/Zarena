@@ -13,7 +13,7 @@ import type {
 } from "../src/lib/types";
 import { DEFAULT_SETTINGS } from "../src/lib/types";
 import { WORDS_EN } from "../src/lib/words";
-import { GEO_LOCATIONS } from "../src/lib/locations";
+import { generateRandomLocation } from "../src/lib/locations";
 
 export default class RoomServer implements Server {
   readonly room: Party;
@@ -35,7 +35,6 @@ export default class RoomServer implements Server {
   correctGuessers = new Set<string>();
 
   // GeoGuess state
-  geoLocationPool: GeoLocation[] = [];
   currentGeoLocation: GeoLocation | null = null;
   geoGuesses = new Map<string, LatLng>();
 
@@ -86,6 +85,9 @@ export default class RoomServer implements Server {
         break;
       case "geo-guess":
         this.handleGeoGuess(sender, data.position);
+        break;
+      case "end-game":
+        this.handleEndGameEarly(sender);
         break;
     }
   }
@@ -393,6 +395,20 @@ export default class RoomServer implements Server {
     }, 10000);
   }
 
+  private handleEndGameEarly(conn: Connection) {
+    if (conn.id !== this.hostId) return;
+    if (this.phase === "lobby") return;
+
+    this.stopTimer();
+    this.phase = "lobby";
+    this.round = 0;
+    for (const player of this.players.values()) {
+      player.score = 0;
+      player.hasGuessedCorrectly = false;
+    }
+    this.broadcastPhaseChange();
+  }
+
   // --- GeoGuess Flow ---
 
   private handleGeoGuess(conn: Connection, position: LatLng) {
@@ -412,10 +428,6 @@ export default class RoomServer implements Server {
   }
 
   private startGeoGame() {
-    // Prepare a shuffled pool of locations for all rounds
-    this.geoLocationPool = [...GEO_LOCATIONS];
-    this.shuffleArray(this.geoLocationPool);
-
     this.phase = "geoGuessing";
     this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
     this.startGeoRound();
@@ -425,13 +437,8 @@ export default class RoomServer implements Server {
     this.phase = "geoGuessing";
     this.geoGuesses.clear();
 
-    // Pick next location from pool
-    if (this.geoLocationPool.length === 0) {
-      // Reshuffle if we run out
-      this.geoLocationPool = [...GEO_LOCATIONS];
-      this.shuffleArray(this.geoLocationPool);
-    }
-    this.currentGeoLocation = this.geoLocationPool.pop()!;
+    // Generate a random location each round
+    this.currentGeoLocation = generateRandomLocation();
 
     this.broadcastPhaseChange();
 
@@ -456,7 +463,7 @@ export default class RoomServer implements Server {
 
       if (guess) {
         distance = this.haversineDistance(guess, location.position);
-        points = Math.round(5000 * Math.exp(-distance / 2000));
+        points = Math.round(5000 * Math.exp(-distance / 3000));
       } else {
         // No guess = 0 points, max distance
         distance = 20000;

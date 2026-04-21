@@ -39,7 +39,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="relative flex flex-1 flex-col items-center justify-center gap-12 p-6 bg-dots overflow-hidden">
+    <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center gap-8 sm:gap-12 p-4 sm:p-6 bg-dots overflow-y-auto">
       {/* Floating decorative elements */}
       <div className="pointer-events-none absolute inset-0">
         <div className="animate-float absolute top-[15%] left-[10%] text-4xl opacity-20">🎨</div>
@@ -52,10 +52,10 @@ export default function HomePage() {
 
       {/* Logo */}
       <div className="animate-slide-up text-center relative z-10">
-        <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-7xl font-black tracking-tighter text-transparent sm:text-8xl">
+        <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-5xl font-black tracking-tighter text-transparent sm:text-7xl md:text-8xl">
           Zarena
         </h1>
-        <p className="mt-4 text-lg text-foreground/50 font-medium">
+        <p className="mt-3 text-sm sm:text-lg text-foreground/50 font-medium">
           Draw, guess &amp; laugh with friends ✨
         </p>
       </div>

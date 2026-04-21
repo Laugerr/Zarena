@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -18,6 +18,12 @@ export const metadata: Metadata = {
     "Casual multiplayer party games with friends. No sign-up needed.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-dvh antialiased`}
     >
       <head>
         <link
@@ -36,7 +42,7 @@ export default function RootLayout({
           crossOrigin=""
         />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="h-dvh flex flex-col bg-background text-foreground overflow-hidden">
         {children}
       </body>
     </html>

@@ -49,7 +49,7 @@ export default function Lobby({
   }
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 p-4 pt-6 bg-dots overflow-hidden">
+    <div className="flex flex-1 min-h-0 flex-col items-center gap-4 sm:gap-6 p-3 sm:p-4 pt-4 sm:pt-6 bg-dots overflow-y-auto">
       {/* Header */}
       <div className="animate-slide-up text-center">
         <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-3xl font-black text-transparent">
@@ -75,7 +75,7 @@ export default function Lobby({
       {/* Main Content */}
       <div className="flex w-full max-w-5xl flex-1 flex-col gap-4 lg:flex-row min-h-0">
         {/* Left: Players */}
-        <div className="animate-slide-up glass rounded-3xl p-5 lg:w-64 flex flex-col h-80 lg:h-auto" style={{ animationDelay: "100ms" }}>
+        <div className="animate-slide-up glass rounded-3xl p-4 sm:p-5 lg:w-64 flex flex-col max-h-60 sm:max-h-80 lg:max-h-none" style={{ animationDelay: "100ms" }}>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
             <span className="text-base">🎭</span> Players
             <span className="ml-auto rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold text-accent-light">
@@ -118,18 +118,18 @@ export default function Lobby({
             <span className="text-base">🎮</span> Choose a Game
             {!isHost && <span className="text-[10px] text-foreground/30 normal-case ml-1">(host picks)</span>}
           </h2>
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 content-start">
             {GAMES.map((game) => (
               <button
                 key={game.id}
                 onClick={() => onSelectGame(game.id)}
                 disabled={!isHost}
-                className={`group glass rounded-3xl p-6 text-left transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed card-hover`}
+                className={`group glass rounded-3xl p-4 sm:p-6 text-left transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed card-hover`}
               >
-                <div className="text-5xl mb-4 group-hover:animate-float transition-all">
+                <div className="text-4xl sm:text-5xl mb-3 sm:mb-4 group-hover:animate-float transition-all">
                   {game.icon}
                 </div>
-                <h3 className={`text-xl font-black bg-gradient-to-r ${game.gradient} bg-clip-text text-transparent`}>
+                <h3 className={`text-lg sm:text-xl font-black bg-gradient-to-r ${game.gradient} bg-clip-text text-transparent`}>
                   {game.name}
                 </h3>
                 <p className="mt-2 text-sm text-foreground/40 leading-relaxed">
@@ -146,7 +146,7 @@ export default function Lobby({
         </div>
 
         {/* Right: Chat */}
-        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-64 h-80 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
+        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-64 max-h-60 sm:max-h-80 lg:max-h-none lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
           <div className="shrink-0 px-4 pt-4 pb-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
               <span className="text-base">💬</span> Chat
