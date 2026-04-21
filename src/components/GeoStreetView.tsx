@@ -19,10 +19,13 @@ export default function GeoStreetView({ lat, lng, heading, apiKey }: GeoStreetVi
         loading="eager"
         referrerPolicy="no-referrer-when-downgrade"
       />
-      {/* Hide the Google Maps location card (top-left) */}
-      <div className="absolute top-0 left-0 w-80 h-24 bg-background pointer-events-auto" />
-      {/* Bottom gradient */}
-      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
+      {/* Vignette edges — also hides the top-left location card */}
+      <div className="absolute top-0 left-0 right-0 h-28 bg-gradient-to-b from-background to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-background to-transparent pointer-events-none" />
+      <div className="absolute top-0 left-0 bottom-0 w-28 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+      <div className="absolute top-0 right-0 bottom-0 w-16 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+      {/* Clickable block only over the card area so map interaction still works */}
+      <div className="absolute top-0 left-0 w-72 h-24 pointer-events-auto" />
     </div>
   );
 }
