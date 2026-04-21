@@ -1,8 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { APIProvider, useApiIsLoaded } from "@vis.gl/react-google-maps";
-
 type GeoStreetViewProps = {
   lat: number;
   lng: number;
@@ -10,39 +7,22 @@ type GeoStreetViewProps = {
   apiKey: string;
 };
 
-function StreetViewPane({ lat, lng, heading }: Omit<GeoStreetViewProps, "apiKey">) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isLoaded = useApiIsLoaded();
-
-  useEffect(() => {
-    if (!isLoaded || !ref.current) return;
-
-    const panorama = new google.maps.StreetViewPanorama(ref.current, {
-      position: { lat, lng },
-      pov: { heading, pitch: 0 },
-      addressControl: false,
-      showRoadLabels: false,
-      fullscreenControl: false,
-      zoomControl: false,
-      panControl: false,
-      motionTracking: false,
-      motionTrackingControl: false,
-      linksControl: false,
-    });
-
-    return () => {
-      // No explicit destroy needed — unmount clears the div
-      panorama.setVisible(false);
-    };
-  }, [isLoaded, lat, lng, heading]);
-
-  return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden glass" />;
-}
-
 export default function GeoStreetView({ lat, lng, heading, apiKey }: GeoStreetViewProps) {
+  const src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lng}&heading=${heading}&pitch=0&fov=90&radius=50000`;
+
   return (
-    <APIProvider apiKey={apiKey}>
-      <StreetViewPane lat={lat} lng={lng} heading={heading} />
-    </APIProvider>
+    <div className="relative w-full h-full rounded-3xl overflow-hidden glass">
+      <iframe
+        src={src}
+        className="w-full h-full border-0"
+        allowFullScreen
+        loading="eager"
+        referrerPolicy="no-referrer-when-downgrade"
+      />
+      {/* Hide the Google Maps location card (top-left) */}
+      <div className="absolute top-0 left-0 w-80 h-24 bg-background pointer-events-auto" />
+      {/* Bottom gradient */}
+      <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background/80 to-transparent pointer-events-none" />
+    </div>
   );
 }
