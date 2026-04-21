@@ -273,8 +273,11 @@ export default function RoomPage() {
           isHost={isHost}
           chatEntries={chatEntries}
           onChat={(text) => send({ type: "chat", text })}
-          onUpdateSettings={(s) => send({ type: "update-settings", settings: s })}
-          onStartGame={() => send({ type: "start-game" })}
+          onUpdateSettings={(s) => send({ type: "update-settings", settings: { ...s, gameMode: "draw" } })}
+          onStartGame={() => {
+            send({ type: "update-settings", settings: { ...settings, gameMode: "draw" } });
+            send({ type: "start-game" });
+          }}
           onBack={() => setLobbyView("hub")}
         />
       );
@@ -289,8 +292,11 @@ export default function RoomPage() {
           isHost={isHost}
           chatEntries={chatEntries}
           onChat={(text) => send({ type: "chat", text })}
-          onUpdateSettings={(s) => send({ type: "update-settings", settings: s })}
-          onStartGame={() => send({ type: "start-game" })}
+          onUpdateSettings={(s) => send({ type: "update-settings", settings: { ...s, gameMode: "geo" } })}
+          onStartGame={() => {
+            send({ type: "update-settings", settings: { ...settings, gameMode: "geo" } });
+            send({ type: "start-game" });
+          }}
           onBack={() => setLobbyView("hub")}
         />
       );
