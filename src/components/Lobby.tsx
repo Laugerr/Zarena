@@ -12,19 +12,26 @@ type LobbyProps = {
   myId: string;
   chatEntries: ChatEntry[];
   onChat: (text: string) => void;
-  onUpdateSettings: (settings: RoomSettings) => void;
-  onStartGame: () => void;
+  onSelectGame: (mode: "draw" | "geo") => void;
 };
 
-const DRAW_TIME_OPTIONS = [30, 45, 60, 90, 120];
-const GEO_TIME_OPTIONS = [15, 20, 30, 45, 60];
-const ROUNDS_OPTIONS = [1, 2, 3, 4, 5];
-const MAX_PLAYERS_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 10, 12];
-const WORD_COUNT_OPTIONS = [2, 3, 4];
-const HINTS_OPTIONS = [0, 1, 2, 3];
-const GAME_MODES = [
-  { value: "draw" as const, label: "Draw & Guess", icon: "🎨" },
-  { value: "geo" as const, label: "GeoGuess", icon: "🌍" },
+const GAMES = [
+  {
+    id: "draw" as const,
+    name: "Draw & Guess",
+    icon: "🎨",
+    description: "One player draws, others guess the word!",
+    gradient: "from-pink-500 to-amber-500",
+    glow: "glow-pink",
+  },
+  {
+    id: "geo" as const,
+    name: "GeoGuess",
+    icon: "🌍",
+    description: "Guess the location from Street View!",
+    gradient: "from-cyan to-accent",
+    glow: "glow-cyan",
+  },
 ];
 
 export default function Lobby({
@@ -34,18 +41,9 @@ export default function Lobby({
   isHost,
   chatEntries,
   onChat,
-  onUpdateSettings,
-  onStartGame,
+  onSelectGame,
 }: LobbyProps) {
-  function updateSetting<K extends keyof RoomSettings>(
-    key: K,
-    value: RoomSettings[K]
-  ) {
-    onUpdateSettings({ ...settings, [key]: value });
-  }
-
   function copyLink() {
-    // Strip query params (like ?name=) so others get a clean link
     const url = window.location.origin + window.location.pathname;
     navigator.clipboard.writeText(url);
   }
@@ -76,103 +74,15 @@ export default function Lobby({
 
       {/* Main Content */}
       <div className="flex w-full max-w-5xl flex-1 flex-col gap-4 lg:flex-row min-h-0">
-        {/* Left: Settings */}
-        <div className="animate-slide-up glass rounded-3xl p-5 lg:w-72" style={{ animationDelay: "100ms" }}>
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
-            <span className="text-base">⚙️</span> Settings
-            {!isHost && <span className="text-[10px] text-foreground/30 normal-case">(host only)</span>}
-          </h2>
-          <div className="flex flex-col gap-3">
-            <SettingRow label="👥 Max Players" icon="">
-              <Select
-                options={MAX_PLAYERS_OPTIONS}
-                value={settings.maxPlayers}
-                onChange={(v) => updateSetting("maxPlayers", v)}
-                disabled={!isHost}
-              />
-            </SettingRow>
-            <SettingRow label="🌐 Language" icon="">
-              <Chip>English</Chip>
-            </SettingRow>
-            <SettingRow label="🎲 Mode" icon="">
-              {isHost ? (
-                <select
-                  value={settings.gameMode}
-                  onChange={(e) => updateSetting("gameMode", e.target.value as "draw" | "geo")}
-                  className="w-full rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-center text-xs font-bold text-foreground focus:border-accent focus:outline-none transition-colors cursor-pointer"
-                >
-                  {GAME_MODES.map((mode) => (
-                    <option key={mode.value} value={mode.value}>
-                      {mode.icon} {mode.label}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <Chip>
-                  {GAME_MODES.find((m) => m.value === settings.gameMode)?.icon}{" "}
-                  {GAME_MODES.find((m) => m.value === settings.gameMode)?.label}
-                </Chip>
-              )}
-            </SettingRow>
-            <SettingRow label="🔄 Rounds" icon="">
-              <Select
-                options={ROUNDS_OPTIONS}
-                value={settings.rounds}
-                onChange={(v) => updateSetting("rounds", v)}
-                disabled={!isHost}
-              />
-            </SettingRow>
-            {settings.gameMode === "draw" ? (
-              <>
-                <SettingRow label="⏱️ Draw Time" icon="">
-                  <Select
-                    options={DRAW_TIME_OPTIONS}
-                    value={settings.drawTime}
-                    onChange={(v) => updateSetting("drawTime", v)}
-                    disabled={!isHost}
-                    suffix="s"
-                  />
-                </SettingRow>
-                <SettingRow label="📝 Words" icon="">
-                  <Select
-                    options={WORD_COUNT_OPTIONS}
-                    value={settings.wordCount}
-                    onChange={(v) => updateSetting("wordCount", v)}
-                    disabled={!isHost}
-                  />
-                </SettingRow>
-                <SettingRow label="💡 Hints" icon="">
-                  <Select
-                    options={HINTS_OPTIONS}
-                    value={settings.hints}
-                    onChange={(v) => updateSetting("hints", v)}
-                    disabled={!isHost}
-                  />
-                </SettingRow>
-              </>
-            ) : (
-              <SettingRow label="⏱️ Guess Time" icon="">
-                <Select
-                  options={GEO_TIME_OPTIONS}
-                  value={settings.geoTime}
-                  onChange={(v) => updateSetting("geoTime", v)}
-                  disabled={!isHost}
-                  suffix="s"
-                />
-              </SettingRow>
-            )}
-          </div>
-        </div>
-
-        {/* Center: Players */}
-        <div className="animate-slide-up flex-1 glass rounded-3xl p-5 flex flex-col h-80 lg:h-auto" style={{ animationDelay: "200ms" }}>
+        {/* Left: Players */}
+        <div className="animate-slide-up glass rounded-3xl p-5 lg:w-64 flex flex-col h-80 lg:h-auto" style={{ animationDelay: "100ms" }}>
           <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
             <span className="text-base">🎭</span> Players
             <span className="ml-auto rounded-full bg-accent/20 px-2.5 py-0.5 text-xs font-bold text-accent-light">
               {players.length}/{settings.maxPlayers}
             </span>
           </h2>
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <ul className="flex flex-col gap-2 stagger">
               {players.map((p, i) => (
                 <li
@@ -200,28 +110,43 @@ export default function Lobby({
               </div>
             )}
           </div>
+        </div>
 
-          {/* Start / Wait */}
-          <div className="mt-4 pt-4 border-t border-surface-lighter/50">
-            {isHost ? (
+        {/* Center: Games */}
+        <div className="animate-slide-up flex-1 flex flex-col min-h-0" style={{ animationDelay: "200ms" }}>
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
+            <span className="text-base">🎮</span> Choose a Game
+            {!isHost && <span className="text-[10px] text-foreground/30 normal-case ml-1">(host picks)</span>}
+          </h2>
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 content-start">
+            {GAMES.map((game) => (
               <button
-                onClick={onStartGame}
-                disabled={players.length < 2}
-                className="w-full rounded-2xl bg-gradient-main py-4 text-lg font-black text-white transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-30 disabled:hover:scale-100 disabled:cursor-not-allowed animate-pulse-glow"
+                key={game.id}
+                onClick={() => onSelectGame(game.id)}
+                disabled={!isHost}
+                className={`group glass rounded-3xl p-6 text-left transition-all hover:scale-[1.03] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed card-hover`}
               >
-                {players.length < 2 ? "⏳ Waiting for players..." : "🚀 START GAME"}
+                <div className="text-5xl mb-4 group-hover:animate-float transition-all">
+                  {game.icon}
+                </div>
+                <h3 className={`text-xl font-black bg-gradient-to-r ${game.gradient} bg-clip-text text-transparent`}>
+                  {game.name}
+                </h3>
+                <p className="mt-2 text-sm text-foreground/40 leading-relaxed">
+                  {game.description}
+                </p>
+                {isHost && (
+                  <div className={`mt-4 rounded-xl bg-gradient-to-r ${game.gradient} px-4 py-2 text-center text-xs font-black text-white opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    SELECT
+                  </div>
+                )}
               </button>
-            ) : (
-              <div className="flex items-center justify-center gap-2 py-4 text-foreground/40">
-                <div className="animate-wiggle text-xl">⏳</div>
-                <span className="font-medium">Waiting for host...</span>
-              </div>
-            )}
+            ))}
           </div>
         </div>
 
         {/* Right: Chat */}
-        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-72 h-80 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
+        <div className="animate-slide-up glass rounded-3xl overflow-hidden lg:w-64 h-80 lg:self-stretch flex flex-col" style={{ animationDelay: "300ms" }}>
           <div className="shrink-0 px-4 pt-4 pb-2">
             <h2 className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-foreground/50">
               <span className="text-base">💬</span> Chat
@@ -238,58 +163,5 @@ export default function Lobby({
         </div>
       </div>
     </div>
-  );
-}
-
-function SettingRow({
-  label,
-  children,
-}: {
-  label: string;
-  icon: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex h-9 items-center justify-between gap-3">
-      <span className="text-xs font-semibold text-foreground/60">{label}</span>
-      <div className="w-24 text-right">{children}</div>
-    </div>
-  );
-}
-
-function Chip({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block w-full rounded-xl bg-surface-lighter px-3 py-1.5 text-center text-xs font-bold text-foreground/50">
-      {children}
-    </span>
-  );
-}
-
-function Select({
-  options,
-  value,
-  onChange,
-  disabled,
-  suffix = "",
-}: {
-  options: number[];
-  value: number;
-  onChange: (value: number) => void;
-  disabled: boolean;
-  suffix?: string;
-}) {
-  return (
-    <select
-      value={value}
-      onChange={(e) => onChange(Number(e.target.value))}
-      disabled={disabled}
-      className="w-full rounded-xl border border-surface-lighter bg-surface-light px-3 py-1.5 text-center text-xs font-bold text-foreground focus:border-accent focus:outline-none disabled:opacity-30 transition-colors cursor-pointer"
-    >
-      {options.map((opt) => (
-        <option key={opt} value={opt}>
-          {opt}{suffix}
-        </option>
-      ))}
-    </select>
   );
 }

@@ -16,6 +16,8 @@ import type {
   Stroke,
 } from "@/lib/types";
 import Lobby from "@/components/Lobby";
+import DrawLobby from "@/components/DrawLobby";
+import GeoLobby from "@/components/GeoLobby";
 import Canvas from "@/components/Canvas";
 import ChatBox, { type ChatEntry } from "@/components/ChatBox";
 import WordPicker from "@/components/WordPicker";
@@ -48,6 +50,7 @@ export default function RoomPage() {
     }
   }, [searchParams, code]);
 
+  const [lobbyView, setLobbyView] = useState<"hub" | "draw" | "geo">("hub");
   const [players, setPlayers] = useState<Player[]>([]);
   const [settings, setSettings] = useState<RoomSettings>(DEFAULT_SETTINGS);
   const [hostId, setHostId] = useState("");
@@ -142,6 +145,7 @@ export default function RoomPage() {
             setWordChoices([]);
           }
           if (msg.game.phase === "lobby") {
+            setLobbyView("hub");
             addChatEntry({ type: "system", text: "🏠 Back to lobby" });
           }
           // Reset geo guess state for new round
@@ -260,6 +264,38 @@ export default function RoomPage() {
 
   // --- LOBBY ---
   if (phase === "lobby" || !game) {
+    if (lobbyView === "draw") {
+      return (
+        <DrawLobby
+          code={code}
+          players={players}
+          settings={settings}
+          isHost={isHost}
+          chatEntries={chatEntries}
+          onChat={(text) => send({ type: "chat", text })}
+          onUpdateSettings={(s) => send({ type: "update-settings", settings: s })}
+          onStartGame={() => send({ type: "start-game" })}
+          onBack={() => setLobbyView("hub")}
+        />
+      );
+    }
+
+    if (lobbyView === "geo") {
+      return (
+        <GeoLobby
+          code={code}
+          players={players}
+          settings={settings}
+          isHost={isHost}
+          chatEntries={chatEntries}
+          onChat={(text) => send({ type: "chat", text })}
+          onUpdateSettings={(s) => send({ type: "update-settings", settings: s })}
+          onStartGame={() => send({ type: "start-game" })}
+          onBack={() => setLobbyView("hub")}
+        />
+      );
+    }
+
     return (
       <Lobby
         code={code}
@@ -269,8 +305,10 @@ export default function RoomPage() {
         myId={myId}
         chatEntries={chatEntries}
         onChat={(text) => send({ type: "chat", text })}
-        onUpdateSettings={(s) => send({ type: "update-settings", settings: s })}
-        onStartGame={() => send({ type: "start-game" })}
+        onSelectGame={(mode) => {
+          send({ type: "update-settings", settings: { ...settings, gameMode: mode } });
+          setLobbyView(mode);
+        }}
       />
     );
   }
