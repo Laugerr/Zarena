@@ -18,9 +18,7 @@ function StreetViewPane({ lat, lng, heading }: Omit<GeoStreetViewProps, "apiKey"
 
     const panorama = new google.maps.StreetViewPanorama(ref.current, {
       position: { lat, lng },
-      heading,
-      pitch: 0,
-      zoom: 0,
+      pov: { heading, pitch: 0 },
       addressControl: false,
       showRoadLabels: false,
       fullscreenControl: false,
