@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import usePartySocket from "partysocket/react";
 import { generateName } from "@/lib/names";
@@ -36,26 +36,122 @@ function formatTimer(seconds: number): string {
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
   const searchParams = useSearchParams();
-  const name = useMemo(() => {
-    const fromUrl = searchParams.get("name");
+  const [name, setName] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("name")?.trim();
     if (fromUrl) {
       sessionStorage.setItem(`zarena-name-${code}`, fromUrl);
-      return fromUrl;
-    }
-    const stored = sessionStorage.getItem(`zarena-name-${code}`);
-    if (stored) return stored;
-    const random = generateName();
-    sessionStorage.setItem(`zarena-name-${code}`, random);
-    return random;
-  }, [searchParams, code]);
-  const hasSentJoin = useRef(false);
-
-  // Clean the URL so sharing doesn't include ?name=
-  useEffect(() => {
-    if (searchParams.get("name")) {
+      setName(fromUrl);
       window.history.replaceState({}, "", `/room/${code}`);
+      return;
+    }
+
+    const stored = sessionStorage.getItem(`zarena-name-${code}`);
+    if (stored) {
+      setName(stored);
     }
   }, [searchParams, code]);
+
+  function handleChooseName(chosenName: string) {
+    const trimmed = chosenName.trim();
+    if (!trimmed) return;
+    sessionStorage.setItem(`zarena-name-${code}`, trimmed);
+    setName(trimmed);
+  }
+
+  if (!name) {
+    return <NameGate code={code} onChooseName={handleChooseName} />;
+  }
+
+  return <RoomSession code={code} name={name} />;
+}
+
+function NameGate({
+  code,
+  onChooseName,
+}: {
+  code: string;
+  onChooseName: (name: string) => void;
+}) {
+  const [draftName, setDraftName] = useState(() => generateName());
+  const [error, setError] = useState("");
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = draftName.trim();
+    if (!trimmed) {
+      setError("Choose a name to join the room!");
+      return;
+    }
+    onChooseName(trimmed);
+  }
+
+  return (
+    <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center overflow-y-auto bg-dots p-4">
+      <div className="animate-slide-up w-full max-w-sm">
+        <div className="mb-6 text-center">
+          <h1 className="bg-gradient-to-r from-purple-400 via-pink-400 to-amber-400 bg-clip-text text-5xl font-black tracking-tighter text-transparent">
+            Zarena
+          </h1>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-surface-lighter bg-surface/70 px-4 py-2">
+            <span className="text-xs font-bold uppercase tracking-widest text-foreground/35">
+              Room
+            </span>
+            <span className="font-mono text-lg font-black tracking-[0.25em] text-cyan">
+              {code}
+            </span>
+          </div>
+        </div>
+
+        <form onSubmit={handleSubmit} className="glass rounded-3xl p-6">
+          <label className="block text-xs font-bold uppercase tracking-widest text-foreground/40">
+            Choose your name
+          </label>
+          <div className="mt-3 flex gap-2">
+            <input
+              type="text"
+              value={draftName}
+              onChange={(e) => {
+                setDraftName(e.target.value);
+                setError("");
+              }}
+              maxLength={16}
+              className="min-w-0 flex-1 rounded-2xl border-2 border-surface-lighter bg-surface px-4 py-3.5 text-center text-lg font-bold text-foreground placeholder:text-foreground/20 transition-colors focus:border-accent focus:outline-none"
+              placeholder="Enter name..."
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setDraftName(generateName());
+                setError("");
+              }}
+              className="flex h-[54px] w-[54px] shrink-0 items-center justify-center rounded-2xl border-2 border-surface-lighter bg-surface text-xl transition-all hover:scale-110 hover:border-accent active:scale-95"
+              title="Random name"
+            >
+              🎲
+            </button>
+          </div>
+          {error && (
+            <p className="mt-3 text-center text-sm font-semibold text-danger">
+              {error}
+            </p>
+          )}
+          <button
+            type="submit"
+            className="mt-5 w-full rounded-2xl bg-gradient-main px-6 py-4 text-lg font-black text-white transition-all hover:scale-[1.02] active:scale-[0.98]"
+          >
+            Join Room
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
+
+function RoomSession({ code, name }: { code: string; name: string }) {
+  const hasSentJoin = useRef(false);
 
   const [lobbyView, setLobbyView] = useState<"hub" | "draw" | "geo">("hub");
   const [players, setPlayers] = useState<Player[]>([]);

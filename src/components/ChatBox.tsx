@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ChatEntry = {
   id: string;
@@ -42,16 +42,16 @@ export default function ChatBox({
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Messages — absolute positioned to prevent height expansion */}
-      <div className="relative flex-1 min-h-0">
+      {/* Messages are absolute positioned to prevent height expansion. */}
+      <div className="relative min-h-0 flex-1">
         <div
           ref={scrollRef}
-          className="absolute inset-0 overflow-y-auto overscroll-contain px-4 py-2 space-y-1.5 text-sm"
+          className="absolute inset-0 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-2 text-sm"
         >
           {entries.length === 0 && (
-            <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="flex h-full flex-col items-center justify-center text-center">
               <span className="text-2xl opacity-20">💬</span>
-              <p className="text-foreground/15 text-xs mt-1">No messages yet</p>
+              <p className="mt-1 text-xs text-foreground/15">No messages yet</p>
             </div>
           )}
           {entries.map((entry) => (
@@ -65,12 +65,12 @@ export default function ChatBox({
                 </p>
               )}
               {entry.type === "correct" && (
-                <p className="rounded-xl bg-success/10 px-3 py-1.5 font-bold text-success text-xs">
+                <p className="rounded-xl bg-success/10 px-3 py-1.5 text-xs font-bold text-success">
                   🎉 {entry.playerName} got it!
                 </p>
               )}
               {entry.type === "system" && (
-                <p className="text-[11px] text-foreground/25 italic">
+                <p className="text-[11px] italic text-foreground/25">
                   {entry.text}
                 </p>
               )}
@@ -79,22 +79,26 @@ export default function ChatBox({
         </div>
       </div>
 
-      {/* Input — always pinned at bottom */}
-      <form onSubmit={handleSubmit} className="shrink-0 p-3 pt-2 border-t border-surface-lighter/30 flex gap-2">
+      {/* Input is always pinned at bottom. */}
+      <form
+        onSubmit={handleSubmit}
+        className="grid shrink-0 grid-cols-[minmax(0,1fr)_2.75rem] gap-2 border-t border-surface-lighter/30 p-2 pt-2 sm:p-3"
+      >
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={disabled}
           placeholder={disabled ? "..." : placeholder}
-          className="flex-1 rounded-xl border border-surface-lighter bg-surface-light px-4 py-2.5 text-sm text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none disabled:opacity-30 transition-colors"
+          className="min-w-0 rounded-xl border border-surface-lighter bg-surface-light px-3 py-2.5 text-sm text-foreground placeholder:text-foreground/20 transition-colors focus:border-accent focus:outline-none disabled:opacity-30 sm:px-4"
         />
         <button
           type="submit"
           disabled={disabled || !input.trim()}
-          className="shrink-0 rounded-xl bg-accent px-3 py-2.5 text-sm font-bold text-white transition-all hover:bg-accent-light active:scale-90 disabled:opacity-20 disabled:hover:bg-accent"
+          aria-label="Send message"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-black text-white transition-all hover:bg-accent-light active:scale-90 disabled:opacity-20 disabled:hover:bg-accent"
         >
-          ➤
+          &gt;
         </button>
       </form>
     </div>
