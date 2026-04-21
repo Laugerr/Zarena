@@ -43,6 +43,39 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Ambient glow orbs — fixed behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  top: -20%;
+  left: -15%;
+  width: 65vw;
+  height: 65vw;
+  max-width: 700px;
+  max-height: 700px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.14) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-slow 14s ease-in-out infinite;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -20%;
+  right: -15%;
+  width: 55vw;
+  height: 55vw;
+  max-width: 620px;
+  max-height: 620px;
+  background: radial-gradient(circle, rgba(236, 72, 153, 0.11) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: float-slow 11s ease-in-out infinite reverse;
+  z-index: 0;
+}
+
 /* Prevent mobile browser pull-to-refresh during game */
 html, body {
   touch-action: manipulation;
@@ -65,10 +98,13 @@ html, body {
   background: linear-gradient(180deg, #14142b 0%, #0a0a1a 100%);
 }
 
-/* Starfield-like subtle dot pattern */
+/* Layered dot pattern — purple + pink */
 .bg-dots {
-  background-image: radial-gradient(circle, rgba(124, 58, 237, 0.08) 1px, transparent 1px);
-  background-size: 32px 32px;
+  background-image:
+    radial-gradient(circle, rgba(124, 58, 237, 0.14) 1.5px, transparent 1.5px),
+    radial-gradient(circle, rgba(236, 72, 153, 0.07) 1px, transparent 1px);
+  background-size: 32px 32px, 20px 20px;
+  background-position: 0 0, 10px 10px;
 }
 
 /* === GLOWS === */

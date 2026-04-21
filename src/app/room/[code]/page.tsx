@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import usePartySocket from "partysocket/react";
 import { generateName } from "@/lib/names";
 import { DEFAULT_SETTINGS } from "@/lib/types";
@@ -25,6 +26,7 @@ import Scoreboard from "@/components/Scoreboard";
 import GeoStreetView from "@/components/GeoStreetView";
 import GeoGuessMap from "@/components/GeoGuessMap";
 import GeoResults from "@/components/GeoResults";
+import DrawRoundEnd from "@/components/DrawRoundEnd";
 
 function formatTimer(seconds: number): string {
   if (seconds < 60) return String(seconds);
@@ -167,6 +169,10 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   const [geoResultLocation, setGeoResultLocation] = useState<GeoLocation | null>(null);
   const [geoPlayerGuessed, setGeoPlayerGuessed] = useState<Set<string>>(new Set());
 
+  const [prevScores, setPrevScores] = useState<Record<string, number>>({});
+  const playersRef = useRef<Player[]>([]);
+  useEffect(() => { playersRef.current = players; }, [players]);
+
   const chatIdCounter = useRef(0);
 
   const addChatEntry = useCallback(
@@ -300,6 +306,8 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           break;
 
         case "round-end":
+          // Snapshot scores before updating so DrawRoundEnd can show gained points
+          setPrevScores(Object.fromEntries(playersRef.current.map((p) => [p.id, p.score])));
           setRevealedWord(msg.word);
           setGame((prev) => (prev ? { ...prev, phase: "roundEnd" } : null));
           setPlayers((prev) =>
@@ -425,7 +433,10 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   // --- PICKING PHASE (drawer picks a word) ---
   if (phase === "picking" && isDrawer && wordChoices.length > 0) {
     return (
-      <main className="flex flex-1 min-h-0 flex-col items-center justify-center overflow-y-auto">
+      <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center overflow-y-auto">
+        <Link href="/" className="absolute top-3 left-3 rounded-xl bg-surface-light/70 border border-surface-lighter/40 px-3 py-1.5 text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+          ← Home
+        </Link>
         <WordPicker
           words={wordChoices}
           onPick={(word) => send({ type: "pick-word", word })}
@@ -439,7 +450,10 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   if (phase === "picking") {
     const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
     return (
-      <main className="flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-8 bg-dots overflow-y-auto p-4">
+      <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-8 bg-dots overflow-y-auto p-4">
+        <Link href="/" className="absolute top-3 left-3 rounded-xl bg-surface-light/70 border border-surface-lighter/40 px-3 py-1.5 text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+          ← Home
+        </Link>
         <div className="relative">
           <div className="animate-float text-5xl sm:text-7xl">🎨</div>
           <div className="absolute -top-2 -right-2 animate-spin-slow text-2xl">✨</div>
@@ -463,7 +477,10 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   if (phase === "gameEnd") {
     const sorted = [...players].sort((a, b) => b.score - a.score);
     return (
-      <main className="flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-10 p-4 bg-dots overflow-y-auto">
+      <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-10 p-4 bg-dots overflow-y-auto">
+        <Link href="/" className="absolute top-3 left-3 rounded-xl bg-surface-light/70 border border-surface-lighter/40 px-3 py-1.5 text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+          ← Home
+        </Link>
         {/* Trophy animation */}
         <div className="relative animate-slide-up">
           <div className="text-5xl sm:text-7xl animate-float">🏆</div>
@@ -533,6 +550,9 @@ function RoomSession({ code, name }: { code: string; name: string }) {
         {/* Top bar */}
         <div className="glass flex items-center justify-between rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
           <div className="flex items-center gap-2 sm:gap-3">
+            <Link href="/" className="rounded-lg bg-surface-lighter/60 px-2 py-1 text-[10px] sm:text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+              ← Home
+            </Link>
             {isHost && (
               <button
                 onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
@@ -601,7 +621,22 @@ function RoomSession({ code, name }: { code: string; name: string }) {
     );
   }
 
-  // --- DRAWING / ROUND END ---
+  // --- ROUND END (draw game) ---
+  if (phase === "roundEnd" && revealedWord && settings.gameMode === "draw") {
+    return (
+      <DrawRoundEnd
+        word={revealedWord}
+        players={players}
+        prevScores={prevScores}
+        myId={myId}
+        countdown={game.timeLeft}
+        round={game.round}
+        totalRounds={game.totalRounds}
+      />
+    );
+  }
+
+  // --- DRAWING ---
   const drawerName = players.find((p) => p.id === game.currentDrawer)?.name;
 
   return (
@@ -609,6 +644,9 @@ function RoomSession({ code, name }: { code: string; name: string }) {
       {/* Top Bar */}
       <div className="glass flex items-center justify-between rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
         <div className="flex items-center gap-2 sm:gap-3">
+          <Link href="/" className="rounded-lg bg-surface-lighter/60 px-2 py-1 text-[10px] sm:text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+            ← Home
+          </Link>
           {isHost && (
             <button
               onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
@@ -621,7 +659,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             {game.round}/{game.totalRounds}
           </span>
           {!isDrawer && phase === "drawing" && (
-            <span className="text-xs text-foreground/30 hidden sm:inline">
+            <span className="text-xs text-foreground/30">
               🎨 <span className="text-pink">{drawerName}</span>
             </span>
           )}
@@ -630,9 +668,9 @@ function RoomSession({ code, name }: { code: string; name: string }) {
         {/* Word / Hint */}
         <div className="text-center">
           {phase === "roundEnd" && revealedWord ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-foreground/40">The word was</span>
-              <span className="rounded-xl bg-warning/20 px-3 py-1 text-lg font-black text-warning">
+            <div className="flex items-center gap-2 animate-slide-up">
+              <span className="text-xs text-foreground/40 hidden sm:inline">The word was</span>
+              <span className="rounded-xl bg-warning/20 px-3 py-1.5 text-base sm:text-lg font-black text-warning glow-purple border border-warning/20">
                 {revealedWord}
               </span>
             </div>
@@ -704,32 +742,47 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           />
         </div>
 
-        {/* Chat */}
+        {/* Chat — desktop */}
         <div className="hidden w-60 shrink-0 glass rounded-3xl lg:flex lg:flex-col overflow-hidden">
-          <div className="shrink-0 px-4 pt-3 pb-1">
+          <div className="shrink-0 px-4 pt-3 pb-1 flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">
-              {isDrawer ? "Chat" : "Guess here"}
+              {isDrawer ? "Chat" : "Guess here ↓"}
             </span>
+            {!isDrawer && phase === "drawing" && (
+              <span className="ml-auto h-2 w-2 rounded-full bg-success animate-pulse" />
+            )}
           </div>
           <div className="flex-1 min-h-0 overflow-hidden">
             <ChatBox
               entries={chatEntries}
               onGuess={(text) => send({ type: "guess", text })}
               disabled={isDrawer || phase !== "drawing"}
-              placeholder={isDrawer ? "You're drawing!" : "Type your guess..."}
+              isDrawer={isDrawer}
+              placeholder="Type your guess..."
             />
           </div>
         </div>
       </div>
 
-      {/* Mobile Chat */}
-      <div className="h-36 sm:h-44 shrink-0 lg:hidden glass rounded-3xl overflow-hidden">
-        <ChatBox
-          entries={chatEntries}
-          onGuess={(text) => send({ type: "guess", text })}
-          disabled={isDrawer || phase !== "drawing"}
-          placeholder={isDrawer ? "You're drawing!" : "Type your guess..."}
-        />
+      {/* Chat — mobile */}
+      <div className="h-40 sm:h-48 shrink-0 lg:hidden glass rounded-3xl overflow-hidden flex flex-col">
+        <div className="shrink-0 px-4 pt-2 pb-0.5 flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/30">
+            {isDrawer ? "Chat" : "Guess here ↓"}
+          </span>
+          {!isDrawer && phase === "drawing" && (
+            <span className="ml-auto h-2 w-2 rounded-full bg-success animate-pulse" />
+          )}
+        </div>
+        <div className="flex-1 min-h-0 overflow-hidden">
+          <ChatBox
+            entries={chatEntries}
+            onGuess={(text) => send({ type: "guess", text })}
+            disabled={isDrawer || phase !== "drawing"}
+            isDrawer={isDrawer}
+            placeholder="Type your guess..."
+          />
+        </div>
       </div>
     </main>
   );

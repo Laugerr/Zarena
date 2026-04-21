@@ -11,10 +11,13 @@ type CanvasProps = {
 };
 
 const COLORS = [
-  "#000000", "#FFFFFF", "#EF4444", "#F97316", "#EAB308",
-  "#22C55E", "#3B82F6", "#8B5CF6", "#EC4899", "#6B7280",
-  "#7C3AED", "#06B6D4", "#84CC16", "#F59E0B", "#14B8A6",
+  "#000000", "#FFFFFF", "#6B7280",
+  "#EF4444", "#F97316", "#EAB308",
+  "#22C55E", "#3B82F6", "#8B5CF6",
+  "#EC4899", "#06B6D4", "#84CC16",
+  "#7C3AED", "#F59E0B", "#14B8A6",
 ];
+
 const SIZES = [3, 6, 12, 24, 40];
 
 export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasProps) {
@@ -33,13 +36,9 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    for (const stroke of strokes) {
-      drawStroke(ctx, stroke);
-    }
+    for (const stroke of strokes) drawStroke(ctx, stroke);
   }, [strokes]);
 
   useEffect(() => {
@@ -47,7 +46,6 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-
     if (strokes.length > lastStrokeCount.current && lastStrokeCount.current > 0) {
       for (let i = lastStrokeCount.current; i < strokes.length; i++) {
         drawStroke(ctx, strokes[i]);
@@ -71,7 +69,6 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
-
     if ("touches" in e) {
       const touch = e.touches[0];
       return {
@@ -113,32 +110,38 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const points = currentPoints.current;
-    if (points.length < 2) return;
-    const from = points[points.length - 2];
-    const to = points[points.length - 1];
+    const pts = currentPoints.current;
+    if (pts.length < 2) return;
 
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
     ctx.strokeStyle = activeColor;
     ctx.lineWidth = size;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.stroke();
+
+    if (pts.length === 2) {
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(pts[1].x, pts[1].y);
+      ctx.stroke();
+    } else {
+      // Smooth bezier through midpoints
+      const p0 = pts[pts.length - 3];
+      const p1 = pts[pts.length - 2];
+      const p2 = pts[pts.length - 1];
+      const mid1 = { x: (p0.x + p1.x) / 2, y: (p0.y + p1.y) / 2 };
+      const mid2 = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 };
+      ctx.beginPath();
+      ctx.moveTo(mid1.x, mid1.y);
+      ctx.quadraticCurveTo(p1.x, p1.y, mid2.x, mid2.y);
+      ctx.stroke();
+    }
   }
 
   function handleEnd() {
     if (!isDrawer || !isDrawing.current) return;
     isDrawing.current = false;
-
     if (currentPoints.current.length > 0) {
-      const stroke: Stroke = {
-        points: [...currentPoints.current],
-        color: activeColor,
-        size,
-      };
-      onStroke(stroke);
+      onStroke({ points: [...currentPoints.current], color: activeColor, size });
       currentPoints.current = [];
     }
   }
@@ -149,8 +152,12 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
         ref={canvasRef}
         width={800}
         height={600}
-        className="w-full max-w-[800px] min-h-0 flex-1 rounded-2xl border-2 border-surface-lighter bg-white touch-none object-contain"
-        style={{ aspectRatio: "4/3", maxHeight: "100%", cursor: isDrawer ? (isEraser ? "cell" : "crosshair") : "default" }}
+        className="w-full max-w-[800px] min-h-0 flex-1 rounded-2xl border-2 border-surface-lighter bg-white touch-none"
+        style={{
+          aspectRatio: "4/3",
+          maxHeight: "100%",
+          cursor: isDrawer ? (isEraser ? "cell" : "crosshair") : "default",
+        }}
         onMouseDown={handleStart}
         onMouseMove={handleMove}
         onMouseUp={handleEnd}
@@ -160,68 +167,82 @@ export default function Canvas({ isDrawer, strokes, onStroke, onClear }: CanvasP
         onTouchEnd={handleEnd}
       />
 
-      {/* Toolbar */}
       {isDrawer && (
-        <div className="glass flex flex-wrap items-center justify-center gap-2 sm:gap-3 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shrink-0">
-          {/* Colors */}
-          <div className="flex flex-wrap gap-1.5">
+        <div className="glass shrink-0 w-full max-w-[800px] rounded-2xl overflow-hidden">
+          {/* Row 1 — Colors (horizontal scroll) */}
+          <div className="flex items-center gap-2 overflow-x-auto px-3 py-2.5 scrollbar-none">
             {COLORS.map((c) => (
               <button
                 key={c}
                 onClick={() => { setColor(c); setIsEraser(false); }}
-                className={`h-6 w-6 rounded-full border-2 transition-all ${
+                title={c}
+                className={`shrink-0 h-7 w-7 rounded-full border-2 transition-all ${
                   color === c && !isEraser
-                    ? "scale-125 border-foreground ring-2 ring-foreground/20"
-                    : "border-transparent hover:scale-110"
+                    ? "scale-125 border-foreground shadow-md ring-2 ring-foreground/20"
+                    : "border-surface-lighter hover:scale-110 hover:border-foreground/40"
                 }`}
                 style={{ backgroundColor: c }}
               />
             ))}
           </div>
 
-          <div className="h-6 w-px bg-surface-lighter" />
+          {/* Divider */}
+          <div className="h-px bg-surface-lighter/30 mx-3" />
 
-          {/* Sizes */}
-          <div className="flex items-center gap-1">
+          {/* Row 2 — Active preview + sizes + eraser + clear */}
+          <div className="flex items-center gap-2 px-3 py-2 overflow-x-auto scrollbar-none">
+            {/* Active color/eraser preview */}
+            <div
+              className="shrink-0 h-7 w-7 rounded-full border-2 border-surface-lighter shadow-inner"
+              style={{ backgroundColor: isEraser ? "#FFFFFF" : color }}
+              title="Active color"
+            />
+            <div className="shrink-0 h-5 w-px bg-surface-lighter/50" />
+
+            {/* Sizes */}
             {SIZES.map((s) => (
               <button
                 key={s}
-                onClick={() => setSize(s)}
-                className={`flex h-8 w-8 items-center justify-center rounded-xl transition-all ${
-                  size === s
-                    ? "bg-accent/30 border border-accent"
+                onClick={() => { setSize(s); setIsEraser(false); }}
+                className={`shrink-0 flex h-9 w-9 items-center justify-center rounded-xl transition-all ${
+                  size === s && !isEraser
+                    ? "bg-accent/25 border border-accent"
                     : "hover:bg-surface-lighter"
                 }`}
               >
                 <div
-                  className="rounded-full bg-foreground"
-                  style={{ width: Math.min(s * 0.7, 18), height: Math.min(s * 0.7, 18) }}
+                  className="rounded-full"
+                  style={{
+                    backgroundColor: isEraser ? "#6B7280" : color,
+                    width: Math.min(s * 0.75, 22),
+                    height: Math.min(s * 0.75, 22),
+                  }}
                 />
               </button>
             ))}
+
+            <div className="shrink-0 h-5 w-px bg-surface-lighter/50" />
+
+            {/* Eraser */}
+            <button
+              onClick={() => setIsEraser(!isEraser)}
+              className={`shrink-0 rounded-xl px-3 py-1.5 text-xs font-bold transition-all whitespace-nowrap ${
+                isEraser
+                  ? "bg-pink/20 text-pink border border-pink/40"
+                  : "bg-surface-lighter/50 text-foreground/50 hover:bg-surface-lighter hover:text-foreground"
+              }`}
+            >
+              ✏️ Erase
+            </button>
+
+            {/* Clear */}
+            <button
+              onClick={onClear}
+              className="shrink-0 rounded-xl bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger transition-all hover:bg-danger/20 active:scale-90 whitespace-nowrap"
+            >
+              🗑️ Clear
+            </button>
           </div>
-
-          <div className="h-6 w-px bg-surface-lighter" />
-
-          {/* Eraser */}
-          <button
-            onClick={() => setIsEraser(!isEraser)}
-            className={`rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
-              isEraser
-                ? "bg-pink/20 text-pink border border-pink/30"
-                : "bg-surface-lighter text-foreground/50 hover:text-foreground"
-            }`}
-          >
-            🧹 Eraser
-          </button>
-
-          {/* Clear */}
-          <button
-            onClick={onClear}
-            className="rounded-xl bg-danger/10 px-3 py-1.5 text-xs font-bold text-danger transition-all hover:bg-danger/20 active:scale-90"
-          >
-            🗑️ Clear
-          </button>
         </div>
       )}
     </div>
@@ -237,9 +258,8 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
   ctx.lineJoin = "round";
 
   if (stroke.points.length === 1) {
-    const p = stroke.points[0];
     ctx.beginPath();
-    ctx.arc(p.x, p.y, stroke.size / 2, 0, Math.PI * 2);
+    ctx.arc(stroke.points[0].x, stroke.points[0].y, stroke.size / 2, 0, Math.PI * 2);
     ctx.fillStyle = stroke.color;
     ctx.fill();
     return;
@@ -247,8 +267,21 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke) {
 
   ctx.beginPath();
   ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
-  for (let i = 1; i < stroke.points.length; i++) {
-    ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+
+  if (stroke.points.length === 2) {
+    ctx.lineTo(stroke.points[1].x, stroke.points[1].y);
+  } else {
+    // Smooth bezier replay
+    for (let i = 1; i < stroke.points.length - 1; i++) {
+      const mid = {
+        x: (stroke.points[i].x + stroke.points[i + 1].x) / 2,
+        y: (stroke.points[i].y + stroke.points[i + 1].y) / 2,
+      };
+      ctx.quadraticCurveTo(stroke.points[i].x, stroke.points[i].y, mid.x, mid.y);
+    }
+    const last = stroke.points[stroke.points.length - 1];
+    ctx.lineTo(last.x, last.y);
   }
+
   ctx.stroke();
 }

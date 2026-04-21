@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState } from "react";
+import Link from "next/link";
 import type { GeoGuessResult, GeoLocation } from "@/lib/types";
 import { MapContainer, TileLayer, Marker, Polyline, Popup } from "react-leaflet";
 import L from "leaflet";
@@ -36,8 +37,14 @@ export default function GeoResults({ results, location, scores, myId }: GeoResul
 
   return (
     <div className="flex flex-1 min-h-0 flex-col gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-game overflow-hidden">
-      {/* Location name reveal */}
-      <div className="glass rounded-2xl px-4 sm:px-5 py-2 sm:py-3 text-center animate-slide-up shrink-0">
+      {/* Location name reveal + home button */}
+      <div className="glass rounded-2xl px-4 sm:px-5 py-2 sm:py-3 text-center animate-slide-up shrink-0 relative">
+        <Link
+          href="/"
+          className="absolute left-3 top-1/2 -translate-y-1/2 rounded-lg bg-surface-lighter/60 px-2.5 py-1 text-[10px] sm:text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all"
+        >
+          ← Home
+        </Link>
         <span className="text-[10px] sm:text-xs text-foreground/40 uppercase tracking-wider">The location was</span>
         <h2 className="text-lg sm:text-xl font-black bg-gradient-to-r from-cyan via-accent-light to-pink bg-clip-text text-transparent mt-0.5 sm:mt-1">
           {location.name}

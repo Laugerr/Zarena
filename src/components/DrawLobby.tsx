@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import type { Player, RoomSettings } from "@/lib/types";
 import { getAvatar } from "@/lib/avatars";
 import ChatBox, { type ChatEntry } from "@/components/ChatBox";
@@ -22,6 +24,14 @@ const MAX_PLAYERS_OPTIONS = [2, 3, 4, 5, 6, 7, 8, 10, 12];
 const WORD_COUNT_OPTIONS = [2, 3, 4];
 const HINTS_OPTIONS = [0, 1, 2, 3];
 
+const RULES = [
+  { icon: "✏️", text: "The drawer picks a secret word and draws it on the canvas." },
+  { icon: "💬", text: "Everyone else types guesses — the faster you guess, the more points!" },
+  { icon: "🎨", text: "The drawer earns points for each correct guess their team makes." },
+  { icon: "💡", text: "Hints reveal letters over time if nobody has guessed yet." },
+  { icon: "🏆", text: "After all rounds, the player with the most points wins!" },
+];
+
 export default function DrawLobby({
   code,
   players,
@@ -33,6 +43,8 @@ export default function DrawLobby({
   onStartGame,
   onBack,
 }: DrawLobbyProps) {
+  const [showRules, setShowRules] = useState(false);
+
   function updateSetting<K extends keyof RoomSettings>(
     key: K,
     value: RoomSettings[K]
@@ -50,6 +62,12 @@ export default function DrawLobby({
       {/* Header */}
       <div className="animate-slide-up text-center">
         <div className="flex items-center justify-center gap-3 mb-2">
+          <Link
+            href="/"
+            className="rounded-xl bg-surface-lighter px-3 py-1.5 text-xs font-bold transition-all hover:bg-surface-light hover:text-foreground/80 active:scale-90 text-foreground/50"
+          >
+            ← Home
+          </Link>
           <button
             onClick={onBack}
             className="rounded-xl bg-surface-lighter px-3 py-1.5 text-xs font-bold transition-all hover:bg-accent hover:text-white active:scale-90"
@@ -130,6 +148,27 @@ export default function DrawLobby({
                 disabled={!isHost}
               />
             </SettingRow>
+          </div>
+
+          {/* How to play */}
+          <div className="mt-4 pt-4 border-t border-surface-lighter/40">
+            <button
+              onClick={() => setShowRules(!showRules)}
+              className="w-full flex items-center justify-between text-xs font-bold text-foreground/40 hover:text-foreground/70 transition-colors"
+            >
+              <span>ℹ️ How to play</span>
+              <span>{showRules ? "▲" : "▼"}</span>
+            </button>
+            {showRules && (
+              <ul className="mt-3 flex flex-col gap-2">
+                {RULES.map((r, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[11px] text-foreground/50 leading-snug">
+                    <span className="shrink-0">{r.icon}</span>
+                    <span>{r.text}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
 

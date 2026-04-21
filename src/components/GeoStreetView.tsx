@@ -18,10 +18,10 @@ export default function GeoStreetView({ lat, lng, heading, apiKey }: GeoStreetVi
         src={src}
         className="absolute border-0"
         style={{
-          top: -48,
-          left: -80,
-          width: "calc(100% + 80px)",
-          height: "calc(100% + 48px)",
+          top: -72,
+          left: -160,
+          width: "calc(100% + 160px)",
+          height: "calc(100% + 72px)",
         }}
         allowFullScreen
         loading="eager"

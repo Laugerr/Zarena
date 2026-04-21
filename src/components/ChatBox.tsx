@@ -13,6 +13,7 @@ type ChatBoxProps = {
   entries: ChatEntry[];
   onGuess: (text: string) => void;
   disabled: boolean;
+  isDrawer?: boolean;
   placeholder?: string;
 };
 
@@ -20,6 +21,7 @@ export default function ChatBox({
   entries,
   onGuess,
   disabled,
+  isDrawer = false,
   placeholder = "Type your guess...",
 }: ChatBoxProps) {
   const [input, setInput] = useState("");
@@ -27,9 +29,7 @@ export default function ChatBox({
 
   useEffect(() => {
     const el = scrollRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [entries.length]);
 
   function handleSubmit(e: React.FormEvent) {
@@ -42,11 +42,11 @@ export default function ChatBox({
 
   return (
     <div className="relative flex h-full flex-col">
-      {/* Messages are absolute positioned to prevent height expansion. */}
+      {/* Messages */}
       <div className="relative min-h-0 flex-1">
         <div
           ref={scrollRef}
-          className="absolute inset-0 space-y-1.5 overflow-y-auto overscroll-contain px-4 py-2 text-sm"
+          className="absolute inset-0 space-y-1.5 overflow-y-auto overscroll-contain px-3 py-2 text-sm"
         >
           {entries.length === 0 && (
             <div className="flex h-full flex-col items-center justify-center text-center">
@@ -57,49 +57,56 @@ export default function ChatBox({
           {entries.map((entry) => (
             <div key={entry.id}>
               {entry.type === "guess" && (
-                <p className="text-foreground/70">
-                  <span className="font-bold text-accent-light">
-                    {entry.playerName}
-                  </span>{" "}
+                <p className="text-sm leading-snug">
+                  <span className="font-bold text-accent-light">{entry.playerName}</span>{" "}
                   <span className="text-foreground/50">{entry.text}</span>
                 </p>
               )}
               {entry.type === "correct" && (
-                <p className="rounded-xl bg-success/10 px-3 py-1.5 text-xs font-bold text-success">
-                  🎉 {entry.playerName} got it!
-                </p>
+                <div className="rounded-xl bg-success/15 px-3 py-2 border border-success/20">
+                  <p className="text-xs font-black text-success">
+                    🎉 {entry.playerName} got it!
+                  </p>
+                </div>
               )}
               {entry.type === "system" && (
-                <p className="text-[11px] italic text-foreground/25">
-                  {entry.text}
-                </p>
+                <p className="text-[11px] italic text-foreground/25">{entry.text}</p>
               )}
             </div>
           ))}
         </div>
       </div>
 
-      {/* Input is always pinned at bottom. */}
+      {/* Input */}
       <form
         onSubmit={handleSubmit}
-        className="grid shrink-0 grid-cols-[minmax(0,1fr)_2.75rem] gap-2 border-t border-surface-lighter/30 p-2 pt-2 sm:p-3"
+        className="shrink-0 border-t border-surface-lighter/30 p-2 sm:p-3"
       >
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          disabled={disabled}
-          placeholder={disabled ? "..." : placeholder}
-          className="min-w-0 rounded-xl border border-surface-lighter bg-surface-light px-3 py-2.5 text-sm text-foreground placeholder:text-foreground/20 transition-colors focus:border-accent focus:outline-none disabled:opacity-30 sm:px-4"
-        />
-        <button
-          type="submit"
-          disabled={disabled || !input.trim()}
-          aria-label="Send message"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-black text-white transition-all hover:bg-accent-light active:scale-90 disabled:opacity-20 disabled:hover:bg-accent"
-        >
-          &gt;
-        </button>
+        {isDrawer ? (
+          <div className="flex items-center justify-center gap-2 rounded-xl border border-surface-lighter/40 bg-surface-light/50 px-3 py-3 text-xs text-foreground/30">
+            <span className="text-base">🎨</span>
+            <span className="font-medium">You&apos;re drawing — no guessing!</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-[minmax(0,1fr)_2.75rem] gap-2">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={disabled}
+              placeholder={disabled ? "Waiting..." : placeholder}
+              className="min-w-0 rounded-xl border border-surface-lighter bg-surface-light px-3 py-2.5 text-sm text-foreground placeholder:text-foreground/25 transition-colors focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/30 disabled:opacity-30 sm:px-4"
+            />
+            <button
+              type="submit"
+              disabled={disabled || !input.trim()}
+              aria-label="Send guess"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-sm font-black text-white transition-all hover:bg-accent-light active:scale-90 disabled:opacity-20 disabled:hover:bg-accent"
+            >
+              ›
+            </button>
+          </div>
+        )}
       </form>
     </div>
   );
