@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { APIProvider } from "@vis.gl/react-google-maps";
+import { APIProvider, useApiIsLoaded } from "@vis.gl/react-google-maps";
 
 type GeoStreetViewProps = {
   lat: number;
@@ -12,9 +12,10 @@ type GeoStreetViewProps = {
 
 function StreetViewPane({ lat, lng, heading }: Omit<GeoStreetViewProps, "apiKey">) {
   const ref = useRef<HTMLDivElement>(null);
+  const isLoaded = useApiIsLoaded();
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!isLoaded || !ref.current) return;
 
     const panorama = new google.maps.StreetViewPanorama(ref.current, {
       position: { lat, lng },
@@ -33,7 +34,7 @@ function StreetViewPane({ lat, lng, heading }: Omit<GeoStreetViewProps, "apiKey"
       // No explicit destroy needed — unmount clears the div
       panorama.setVisible(false);
     };
-  }, [lat, lng, heading]);
+  }, [isLoaded, lat, lng, heading]);
 
   return <div ref={ref} className="w-full h-full rounded-3xl overflow-hidden glass" />;
 }
