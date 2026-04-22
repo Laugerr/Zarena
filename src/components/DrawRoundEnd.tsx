@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import Link from "next/link";
 import type { Player, Stroke } from "@/lib/types";
+import { drawStroke } from "@/lib/canvas";
 import { getAvatar } from "@/lib/avatars";
 
 type DrawRoundEndProps = {
@@ -25,37 +26,16 @@ function StrokeCanvas({ strokes }: { strokes: Stroke[] }) {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "#ffffff";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    const scaleX = canvas.width / 800;
-    const scaleY = canvas.height / 600;
-
-    for (const stroke of strokes) {
-      if (stroke.points.length < 2) continue;
-      ctx.beginPath();
-      ctx.strokeStyle = stroke.color;
-      ctx.lineWidth = stroke.size * Math.min(scaleX, scaleY);
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.moveTo(stroke.points[0].x * scaleX, stroke.points[0].y * scaleY);
-      for (let i = 1; i < stroke.points.length - 1; i++) {
-        const mx = ((stroke.points[i].x + stroke.points[i + 1].x) / 2) * scaleX;
-        const my = ((stroke.points[i].y + stroke.points[i + 1].y) / 2) * scaleY;
-        ctx.quadraticCurveTo(stroke.points[i].x * scaleX, stroke.points[i].y * scaleY, mx, my);
-      }
-      const last = stroke.points[stroke.points.length - 1];
-      ctx.lineTo(last.x * scaleX, last.y * scaleY);
-      ctx.stroke();
-    }
+    for (const stroke of strokes) drawStroke(ctx, stroke);
   }, [strokes]);
 
   return (
     <canvas
       ref={canvasRef}
-      width={320}
-      height={240}
+      width={800}
+      height={600}
       className="w-full h-full rounded-2xl"
     />
   );

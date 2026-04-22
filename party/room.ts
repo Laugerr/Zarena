@@ -96,6 +96,9 @@ export default class RoomServer implements Server {
       case "kick":
         this.handleKick(sender, data.playerId);
         break;
+      case "undo-stroke":
+        this.handleUndoStroke(sender);
+        break;
     }
   }
 
@@ -265,7 +268,28 @@ export default class RoomServer implements Server {
         playerName: player.name,
         text,
       });
+
+      // "So close!" hint — if within edit distance 2 of the answer and answer is long enough
+      if (answer.length >= 4 && this.levenshtein(guess, answer) <= 2) {
+        conn.send(JSON.stringify({ type: "so-close" } as ServerMessage));
+      }
     }
+  }
+
+  private levenshtein(a: string, b: string): number {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+      Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+    );
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] =
+          a[i - 1] === b[j - 1]
+            ? dp[i - 1][j - 1]
+            : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
   }
 
   private handleChat(conn: Connection, text: string) {
@@ -437,6 +461,14 @@ export default class RoomServer implements Server {
       this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
       this.startPickingPhase();
     }
+  }
+
+  private handleUndoStroke(conn: Connection) {
+    if (this.phase !== "drawing") return;
+    if (conn.id !== this.getCurrentDrawerId()) return;
+    if (this.strokes.length === 0) return;
+    this.strokes.pop();
+    this.broadcastExcept(conn.id, { type: "undo-stroke" });
   }
 
   private handleKick(conn: Connection, targetId: string) {

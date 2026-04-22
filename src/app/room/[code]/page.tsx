@@ -175,8 +175,13 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   const [isConnected, setIsConnected] = useState(true);
   const [showConfetti, setShowConfetti] = useState(false);
   const [correctFlash, setCorrectFlash] = useState(false);
+  const [soCloseFlash, setSoCloseFlash] = useState(false);
+  const [newlyRevealedHint, setNewlyRevealedHint] = useState<Set<number>>(new Set());
+  const prevHintRef = useRef<string | null>(null);
+  const gameRef = useRef<GameState | null>(null);
   const playersRef = useRef<Player[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
+  useEffect(() => { gameRef.current = game; }, [game]);
 
   const chatIdCounter = useRef(0);
 
@@ -261,6 +266,10 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           if (msg.game.phase === "drawing" || msg.game.phase === "lobby") {
             setWordChoices([]);
           }
+          if (msg.game.phase === "picking") {
+            prevHintRef.current = null;
+            setNewlyRevealedHint(new Set());
+          }
           if (msg.game.phase === "lobby") {
             setLobbyView("hub");
             addChatEntry({ type: "system", text: "🏠 Back to lobby" });
@@ -288,18 +297,18 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           break;
 
         case "correct-guess":
-          setPlayers((prev) =>
-            prev.map((p) =>
-              p.id === msg.playerId
-                ? { ...p, hasGuessedCorrectly: true }
-                : p
-            )
-          );
-          addChatEntry({
-            type: "correct",
-            playerName: msg.playerName,
-            text: "",
+          setPlayers((prev) => {
+            const updated = prev.map((p) =>
+              p.id === msg.playerId ? { ...p, hasGuessedCorrectly: true } : p
+            );
+            const drawerId = gameRef.current?.currentDrawer;
+            const nonDrawers = updated.filter((p) => p.id !== drawerId);
+            if (nonDrawers.length > 0 && nonDrawers.every((p) => p.hasGuessedCorrectly)) {
+              setTimeout(() => addChatEntry({ type: "system", text: "🎉 Everyone got it!" }), 0);
+            }
+            return updated;
           });
+          addChatEntry({ type: "correct", playerName: msg.playerName, text: "" });
           playCorrect();
           if (msg.playerId === socket.id) {
             setCorrectFlash(true);
@@ -315,10 +324,22 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           });
           break;
 
-        case "hint-update":
+        case "hint-update": {
+          const prevChars = (prevHintRef.current ?? "").split(" ");
+          const newChars = msg.hint.split(" ");
+          const revealed = new Set<number>();
+          newChars.forEach((ch, i) => {
+            if (ch !== "_" && ch !== " " && (prevChars[i] === "_" || prevChars[i] === undefined)) {
+              revealed.add(i);
+            }
+          });
+          prevHintRef.current = msg.hint;
+          setNewlyRevealedHint(revealed);
+          setTimeout(() => setNewlyRevealedHint(new Set()), 700);
           setGame((prev) => (prev ? { ...prev, hint: msg.hint } : null));
           playHint();
           break;
+        }
 
         case "round-end":
           // Snapshot scores before updating so DrawRoundEnd can show gained points
@@ -355,6 +376,15 @@ function RoomSession({ code, name }: { code: string; name: string }) {
         case "geo-hint":
           setGame((prev) => (prev ? { ...prev, geoHint: msg.hint } : null));
           playHint();
+          break;
+
+        case "undo-stroke":
+          setStrokes((prev) => prev.slice(0, -1));
+          break;
+
+        case "so-close":
+          setSoCloseFlash(true);
+          setTimeout(() => setSoCloseFlash(false), 2000);
           break;
 
         case "correct-guesser-chat":
@@ -751,6 +781,11 @@ function RoomSession({ code, name }: { code: string; name: string }) {
               🎨 <span className="text-pink">{drawerName}</span>
             </span>
           )}
+          {isDrawer && phase === "drawing" && (
+            <span className="text-xs font-bold text-foreground/40">
+              {players.filter((p) => p.hasGuessedCorrectly).length}/{players.length - 1} guessed
+            </span>
+          )}
         </div>
 
         {/* Word / Hint */}
@@ -779,7 +814,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
                     className={`flex h-6 w-4 sm:h-8 sm:w-6 items-center justify-center rounded text-xs sm:text-base font-black ${
                       ch === "_"
                         ? "bg-surface-lighter text-foreground/20"
-                        : "bg-accent/20 text-accent-light"
+                        : `bg-accent/20 text-accent-light${newlyRevealedHint.has(i) ? " animate-pop" : ""}`
                     }`}
                   >
                     {ch === "_" ? "" : ch}
@@ -829,11 +864,19 @@ function RoomSession({ code, name }: { code: string; name: string }) {
               </div>
             </div>
           )}
+          {soCloseFlash && (
+            <div className="absolute inset-x-0 top-3 z-10 flex justify-center animate-slide-up pointer-events-none">
+              <div className="rounded-2xl bg-warning/90 border border-warning px-5 py-3 shadow-lg backdrop-blur-sm">
+                <p className="text-sm font-black text-white">🔥 So close!</p>
+              </div>
+            </div>
+          )}
           <Canvas
             isDrawer={isDrawer && phase === "drawing"}
             strokes={strokes}
             onStroke={(stroke) => send({ type: "draw-stroke", stroke })}
             onClear={() => { setStrokes([]); send({ type: "clear-canvas" }); }}
+            onUndo={() => { setStrokes((prev) => prev.slice(0, -1)); send({ type: "undo-stroke" }); }}
           />
         </div>
 

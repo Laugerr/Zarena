@@ -43,6 +43,7 @@ export type Stroke = {
   points: { x: number; y: number }[];
   color: string;
   size: number;
+  fill?: boolean; // if true, flood-fill at points[0]
 };
 
 /** A lat/lng coordinate */
@@ -100,7 +101,8 @@ export type ClientMessage =
   | { type: "chat"; text: string }
   | { type: "geo-guess"; position: LatLng }
   | { type: "end-game" }
-  | { type: "kick"; playerId: string };
+  | { type: "kick"; playerId: string }
+  | { type: "undo-stroke" };
 
 /** Messages sent from PartyKit server to clients */
 export type ServerMessage =
@@ -122,4 +124,6 @@ export type ServerMessage =
   | { type: "geo-round-results"; results: GeoGuessResult[]; location: GeoLocation; scores: Record<string, number> }
   | { type: "player-guessed"; playerId: string }
   | { type: "geo-hint"; hint: string }
-  | { type: "correct-guesser-chat"; playerName: string; text: string };
+  | { type: "correct-guesser-chat"; playerName: string; text: string }
+  | { type: "undo-stroke" }
+  | { type: "so-close" };

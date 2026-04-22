@@ -1,102 +1,158 @@
-# 🗺️ Zarena Release Plan
+# 🗺️ Zarena — Release Notes & Roadmap
 
-## 🎉 v1.0 - Playable Party Games Baseline
+🌐 **Live:** [zarena.vercel.app](https://zarena.vercel.app/)
 
-This is the current first public baseline for Zarena: a playable multiplayer party-games website with room creation, realtime lobbies, Draw & Guess, and an early GeoGuess mode. ✨
+---
 
-🌐 Live website: [zarena.vercel.app](https://zarena.vercel.app/)
+## 🚀 v1.0 — Playable Party Games Baseline ✅
 
-### 🧱 Core Platform
+> First public release. The foundation is live and playable.
 
-- [x] ⚡ Next.js app with TypeScript and Tailwind CSS
-- [x] 🎈 PartyKit realtime room server
+### 🧱 Platform
+
+- [x] ⚡ Next.js 15 App Router + TypeScript + Tailwind CSS v4
+- [x] 🎈 PartyKit realtime WebSocket room server
 - [x] 🏠 Create-room and join-room flow
 - [x] 🔑 Shareable 6-character room codes
-- [x] 🦊 Random player names with editable names before entering a room
+- [x] 🦊 Random fun player names + editable before joining
 - [x] 🛰️ Realtime player join/leave tracking
-- [x] 👑 Host detection and host-only game controls
-- [x] ⚙️ Room settings synced through the PartyKit server
-- [x] 🚢 Deployable frontend/server structure for Vercel + PartyKit
-- [x] 🌐 Live Vercel deployment
+- [x] 👑 Host detection and host-only controls
+- [x] ⚙️ Room settings synced through PartyKit
+- [x] 🕹️ Game-mode selection hub (Draw & Guess / GeoGuess)
+- [x] 🚢 Deployable on Vercel + PartyKit
+- [x] 🌐 Live deployment at zarena.vercel.app
 
 ### 🎨 Draw & Guess
 
-- [x] 🎬 Game phases: lobby, word picking, drawing, round end, and game end
-- [x] 📝 Word selection for the drawer
+- [x] 🎬 Game phases: lobby → word pick → drawing → round end → game end
 - [x] 🖌️ Canvas drawing with realtime stroke sync
-- [x] 🧽 Clear-canvas support
+- [x] 🧽 Clear canvas
 - [x] 💬 Chat and guess input
 - [x] ✅ Correct-guess detection
 - [x] ⏱️ Round timer
-- [x] 💡 Progressive word hints
-- [x] 🧮 Per-player scoring
-- [x] 🎁 Drawer bonus points
+- [x] 💡 Progressive letter hints
+- [x] 🧮 Time-based scoring with drawer bonus
 - [x] 🏆 Scoreboard and end-of-game leaderboard
 - [x] 🛑 Host can end an active game early
 
 ### 🌍 GeoGuess
 
 - [x] 🌐 GeoGuess lobby and settings
-- [x] 🎲 Random weighted world-location generation
+- [x] 🎲 Random world location generation
 - [x] 🛣️ Google Street View display
-- [x] 📍 Interactive map guessing
-- [x] 📏 Distance-based scoring
+- [x] 📍 Interactive Leaflet map guessing
+- [x] 📏 Haversine distance scoring (max 5,000 pts)
 - [x] 🧭 Round results with location reveal
-- [x] 🏆 Shared scoreboard across rounds
+- [x] 🏆 Shared cumulative scoreboard
 
-### ✨ UX
+---
 
-- [x] 🕹️ Game-mode selection hub
-- [x] 📱 Responsive room/game layout
-- [x] 💬 Mobile chat area for Draw & Guess
-- [x] 🎭 Animated and themed interface
-- [x] ⚠️ Basic error handling for room joining
+## ✨ v1.1 — Polish & Release Readiness ✅
 
-## 🧪 v1.1 - Stability & Documentation
+> Stability, UX, and multiplayer resilience improvements.
 
-- [ ] 🔍 Verify the app with `npm run lint`
-- [ ] 🏗️ Verify production build with `npm run build`
-- [ ] 🧑‍🤝‍🧑 Add local testing notes for two-browser multiplayer checks
-- [ ] 🚢 Add deployment checklist for Vercel and PartyKit
-- [ ] 🔐 Confirm environment variable setup for production
-- [ ] 🖼️ Improve README screenshots or demo GIFs
-- [ ] 🐛 Fix any browser-specific issues found during manual playtesting
+### 🔧 Resilience
 
-## 🎨 v1.2 - Draw & Guess Polish
+- [x] 🔌 Connection lost UI with animated reconnect indicator
+- [x] 🔄 Disconnect handling — host migration, drawer disconnect auto-advances turn
+- [x] 🧩 Late-join sync — new players receive full game state on connect
+- [x] 🔀 Picking phase disconnect — auto-skips if drawer leaves during word selection
 
-- [ ] 🌈 Brush color picker improvements
-- [ ] 🖌️ Brush size controls
-- [ ] 🧽 Eraser tool
-- [ ] ⚡ Better drawing performance for long rounds
-- [ ] 📜 Round history showing previous words
-- [ ] 🔊 Sound effects for correct guesses, timer warnings, and round end
-- [ ] 👀 Better spectator/waiting states when joining mid-game
-- [ ] 🧹 More robust anti-duplicate player handling
+### 🎨 Draw & Guess Polish
 
-## 🌍 v1.3 - GeoGuess Polish
+- [x] 🖊️ Smooth bezier drawing (quadraticCurveTo through midpoints)
+- [x] 📚 500+ curated drawable words in 10 categories
+- [x] 📂 Word category filter — host picks which categories to use
+- [x] ✏️ Custom words — host can paste their own list
+- [x] 🔒 Correct-guesser private chat (whisper) — visible only to drawer + other correct guessers
+- [x] 🖼️ Canvas preview on round end screen alongside score deltas
+- [x] 🏅 Rank movement arrows (↑↓) in round results
+- [x] 🔄 Rematch button — host restarts without leaving
 
-- [ ] 🛣️ Validate Street View availability before starting a round
-- [ ] 🧯 Better fallback UI when Google Maps is missing or unavailable
-- [ ] 🗺️ More accurate location pools and categories
-- [ ] 📍 Guess markers for all players on results map
-- [ ] 📏 Distance visualization between guess and answer
-- [ ] 🌎 Optional region-based game settings
+### 🌍 GeoGuess Polish
 
-## 🤝 v1.4 - Social & Room Settings
+- [x] 📍 120+ curated city-centre locations across all continents
+- [x] 🛣️ `source=outdoor` + `radius=1500m` ensures navigable street-level views
+- [x] 💡 Progressive geo hints — continent (33% elapsed) → country (66% elapsed)
+- [x] 📊 Results map shows every player's pin + dashed line to real location
+- [x] ⛶ Expand-map button on mobile for full-screen pin placement
 
-- [ ] 🔗 Invite link/share button
-- [ ] 🚪 Max-player enforcement
-- [ ] ⚙️ More detailed room settings
-- [ ] ⏱️ Custom round count and timers per mode
-- [ ] 🧑‍🎨 Player avatars or color indicators
-- [ ] 🌓 Dark/light mode toggle
-- [ ] 🎞️ Animated transitions between phases
+### 🔊 Sound Effects
 
-## 🔮 Future Ideas
+- [x] 🎉 Correct guess — ascending happy chord
+- [x] ⏰ Round end — descending resolve
+- [x] 🏆 Game end — victory fanfare
+- [x] 🎮 Game start — upward sweep
+- [x] ⏱️ Urgent timer tick (last 10 seconds)
+- [x] 💡 Hint revealed — two-note chime
 
-- [ ] 📚 Custom word packs and categories
-- [ ] 👀 Spectator mode
-- [ ] 🎞️ Drawing replay/timelapse
-- [ ] 🏘️ Public room browser
-- [ ] 🎲 Party queue for rotating game modes
-- [ ] 🧩 Additional party games beyond Draw & Guess and GeoGuess
+### 👑 Host Tools
+
+- [x] 🦵 Kick player — host can remove AFK players from lobby or game
+- [x] ✕ End game early button
+- [x] 🔄 Rematch from game end screen
+
+### 🎊 Celebration
+
+- [x] 🎊 Canvas confetti burst on game end (180 pieces, 5 seconds, gravity + fade)
+- [x] 🎉 "You got it!" personal flash when you guess correctly
+- [x] 🔥 "So close!" private toast when your guess is 1–2 letters off (Levenshtein)
+- [x] ✅ "Everyone got it!" chat message when all non-drawers guess correctly
+
+---
+
+## 🎨 v1.2 — Drawing Tools Deep Dive ✅
+
+> Professional-grade drawing tools that make the game feel great.
+
+- [x] ✏️ **Pen tool** — smooth bezier strokes with pressure feel
+- [x] 🧹 **Eraser tool** — white brush with eraser cursor
+- [x] 🪣 **Flood fill tool** — BFS flood fill with 30-unit tolerance for anti-aliased edges; replicated to all clients and stored in stroke history
+- [x] 📏 **Line tool** — click + drag with live preview on overlay canvas; commits straight 2-point stroke on release
+- [x] 👁️ **Cursor preview** — circle follows mouse, sized and colored to match current brush
+- [x] ↩️ **Undo** — removes last stroke (button + Ctrl+Z / Cmd+Z); synced to all clients
+- [x] 🎨 18-color palette (expanded from 15)
+- [x] 🃏 **Word picker polish** — each word shows blank pattern (`_ _ _ _ _`) + category badge
+- [x] 💡 **Hint letter animation** — revealed letters pop in with spring bounce (`animate-pop`)
+- [x] 👀 **Drawer guess counter** — top bar shows `X/Y guessed` live for the drawer
+
+---
+
+## 🔮 Roadmap — Future Ideas
+
+> Things that would make Zarena even better. No timeline, just ideas.
+
+### 🎮 Gameplay
+
+- [ ] 👀 Spectator mode — watch without playing
+- [ ] 🎞️ Drawing replay / timelapse after round end
+- [ ] 📜 Round history — see previous words in the session
+- [ ] 🌡️ Difficulty presets — Easy / Normal / Hard (word pools + time)
+- [ ] ⚡ Sudden death mode — one guess limit per player
+
+### 🎨 Draw & Guess
+
+- [ ] 📝 Text tool — add text labels to drawings
+- [ ] 🖼️ Image stamp tool — basic shapes (circle, square, arrow)
+- [ ] 📜 Canvas layers — separate background and foreground
+- [ ] 🔁 Rotate / flip canvas
+
+### 🌍 GeoGuess
+
+- [ ] 🌎 Region lock — play only cities from a specific continent or country
+- [ ] 🏙️ City-only mode vs. countryside mode
+- [ ] 🗺️ Show heading/bearing hint after 80% of time
+- [ ] 📡 Multiplayer Street View navigation — everyone explores together
+
+### 🏘️ Social
+
+- [ ] 🏘️ Public room browser — browse open rooms without a code
+- [ ] 🎲 Party queue — rotate game modes automatically
+- [ ] 🧩 Additional games beyond Draw & Guess and GeoGuess
+- [ ] 🏆 Persistent leaderboard across sessions
+- [ ] 🌓 Dark / light mode toggle
+- [ ] 🧑‍🎨 Player avatar customization
+
+---
+
+*Last updated: April 2026 🗓️*

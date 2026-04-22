@@ -136,6 +136,13 @@ export const WORD_CATEGORIES = {
 export type WordCategory = keyof typeof WORD_CATEGORIES;
 export const ALL_CATEGORIES = Object.keys(WORD_CATEGORIES) as WordCategory[];
 
+export function getWordCategory(word: string): string | null {
+  for (const [cat, words] of Object.entries(WORD_CATEGORIES)) {
+    if ((words as readonly string[]).includes(word)) return cat;
+  }
+  return null;
+}
+
 export const WORDS_EN: string[] = [
   ...ANIMALS,
   ...FOOD_AND_DRINKS,
