@@ -18,6 +18,7 @@ export type RoomSettings = {
   geoTime: number;
   useCustomWords: boolean;
   customWords: string; // comma or newline separated
+  selectedCategories: string[]; // empty = all categories
 };
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -31,6 +32,7 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   geoTime: 60,
   useCustomWords: false,
   customWords: "",
+  selectedCategories: [],
 };
 
 /** Game phase */
@@ -51,7 +53,8 @@ export type GeoLocation = {
   id: string;
   position: LatLng;
   heading: number;
-  name: string; // revealed after round
+  name: string;     // revealed after round — "City, Country"
+  continent: string; // used for progressive hints
 };
 
 /** A player's geo guess */
@@ -76,6 +79,7 @@ export type GameState = {
   geoLocation: { lat: number; lng: number; heading: number } | null;
   geoGuesses: GeoGuessResult[];
   geoLocationName: string | null;
+  geoHint: string | null;
   // Shared
   timeLeft: number;
   round: number;
@@ -88,13 +92,15 @@ export type ClientMessage =
   | { type: "join"; name: string }
   | { type: "update-settings"; settings: RoomSettings }
   | { type: "start-game" }
+  | { type: "rematch" }
   | { type: "pick-word"; word: string }
   | { type: "draw-stroke"; stroke: Stroke }
   | { type: "clear-canvas" }
   | { type: "guess"; text: string }
   | { type: "chat"; text: string }
   | { type: "geo-guess"; position: LatLng }
-  | { type: "end-game" };
+  | { type: "end-game" }
+  | { type: "kick"; playerId: string };
 
 /** Messages sent from PartyKit server to clients */
 export type ServerMessage =
@@ -114,4 +120,6 @@ export type ServerMessage =
   | { type: "round-end"; word: string; scores: Record<string, number> }
   | { type: "game-end"; scores: Record<string, number> }
   | { type: "geo-round-results"; results: GeoGuessResult[]; location: GeoLocation; scores: Record<string, number> }
-  | { type: "player-guessed"; playerId: string };
+  | { type: "player-guessed"; playerId: string }
+  | { type: "geo-hint"; hint: string }
+  | { type: "correct-guesser-chat"; playerName: string; text: string };

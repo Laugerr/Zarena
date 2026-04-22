@@ -16,6 +16,8 @@ import type {
   ServerMessage,
   Stroke,
 } from "@/lib/types";
+import { playCorrect, playRoundEnd, playGameEnd, playStart, playTick, playHint } from "@/lib/sounds";
+import Confetti from "@/components/Confetti";
 import Lobby from "@/components/Lobby";
 import DrawLobby from "@/components/DrawLobby";
 import GeoLobby from "@/components/GeoLobby";
@@ -170,6 +172,9 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   const [geoPlayerGuessed, setGeoPlayerGuessed] = useState<Set<string>>(new Set());
 
   const [prevScores, setPrevScores] = useState<Record<string, number>>({});
+  const [isConnected, setIsConnected] = useState(true);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [correctFlash, setCorrectFlash] = useState(false);
   const playersRef = useRef<Player[]>([]);
   useEffect(() => { playersRef.current = players; }, [players]);
 
@@ -189,6 +194,8 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   const socket = usePartySocket({
     host: process.env.NEXT_PUBLIC_PARTYKIT_HOST ?? "localhost:1999",
     room: code,
+    onOpen() { setIsConnected(true); },
+    onClose() { setIsConnected(false); },
     onMessage(event) {
       const msg = JSON.parse(event.data) as ServerMessage;
 
@@ -239,6 +246,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           setGeoResultLocation(null);
           setGeoPlayerGuessed(new Set());
           addChatEntry({ type: "system", text: "🎮 Game started!" });
+          playStart();
           break;
 
         case "pick-words":
@@ -268,6 +276,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
 
         case "timer-tick":
           setGame((prev) => (prev ? { ...prev, timeLeft: msg.timeLeft } : null));
+          if (msg.timeLeft <= 10 && msg.timeLeft > 0) playTick();
           break;
 
         case "draw-stroke":
@@ -291,6 +300,11 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             playerName: msg.playerName,
             text: "",
           });
+          playCorrect();
+          if (msg.playerId === socket.id) {
+            setCorrectFlash(true);
+            setTimeout(() => setCorrectFlash(false), 2500);
+          }
           break;
 
         case "chat-message":
@@ -303,6 +317,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
 
         case "hint-update":
           setGame((prev) => (prev ? { ...prev, hint: msg.hint } : null));
+          playHint();
           break;
 
         case "round-end":
@@ -321,6 +336,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             type: "system",
             text: `⏰ The word was: ${msg.word}`,
           });
+          playRoundEnd();
           break;
 
         case "game-end":
@@ -332,6 +348,20 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             }))
           );
           addChatEntry({ type: "system", text: "🏁 Game over!" });
+          playGameEnd();
+          setShowConfetti(true);
+          break;
+
+        case "geo-hint":
+          setGame((prev) => (prev ? { ...prev, geoHint: msg.hint } : null));
+          playHint();
+          break;
+
+        case "correct-guesser-chat":
+          addChatEntry({
+            type: "whisper",
+            text: `${msg.playerName}: ${msg.text}`,
+          });
           break;
 
         case "geo-round-results":
@@ -373,6 +403,28 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   const phase = game?.phase ?? "lobby";
   const isDrawer = game?.currentDrawer === myId;
 
+  // --- CONNECTION LOST ---
+  if (!isConnected) {
+    return (
+      <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center gap-6 bg-dots p-6">
+        <div className="animate-float text-6xl">🔌</div>
+        <div className="text-center animate-slide-up">
+          <h2 className="text-2xl font-black text-danger">Connection Lost</h2>
+          <p className="mt-2 text-foreground/40">Trying to reconnect...</p>
+        </div>
+        <div className="flex gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-2 w-2 rounded-full bg-accent animate-pulse"
+              style={{ animationDelay: `${i * 0.2}s` }}
+            />
+          ))}
+        </div>
+      </main>
+    );
+  }
+
   // --- LOBBY ---
   if (phase === "lobby" || !game) {
     if (lobbyView === "draw") {
@@ -382,6 +434,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           players={players}
           settings={settings}
           isHost={isHost}
+          myId={myId}
           chatEntries={chatEntries}
           onChat={(text) => send({ type: "chat", text })}
           onUpdateSettings={(s) => send({ type: "update-settings", settings: { ...s, gameMode: "draw" } })}
@@ -390,6 +443,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             send({ type: "start-game" });
           }}
           onBack={() => setLobbyView("hub")}
+          onKick={(id) => send({ type: "kick", playerId: id })}
         />
       );
     }
@@ -401,6 +455,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           players={players}
           settings={settings}
           isHost={isHost}
+          myId={myId}
           chatEntries={chatEntries}
           onChat={(text) => send({ type: "chat", text })}
           onUpdateSettings={(s) => send({ type: "update-settings", settings: { ...s, gameMode: "geo" } })}
@@ -409,6 +464,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
             send({ type: "start-game" });
           }}
           onBack={() => setLobbyView("hub")}
+          onKick={(id) => send({ type: "kick", playerId: id })}
         />
       );
     }
@@ -477,6 +533,8 @@ function RoomSession({ code, name }: { code: string; name: string }) {
   if (phase === "gameEnd") {
     const sorted = [...players].sort((a, b) => b.score - a.score);
     return (
+      <>
+      {showConfetti && <Confetti onDone={() => setShowConfetti(false)} />}
       <main className="relative flex flex-1 min-h-0 flex-col items-center justify-center gap-6 sm:gap-10 p-4 bg-dots overflow-y-auto">
         <Link href="/" className="absolute top-3 left-3 rounded-xl bg-surface-light/70 border border-surface-lighter/40 px-3 py-1.5 text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
           ← Home
@@ -519,11 +577,30 @@ function RoomSession({ code, name }: { code: string; name: string }) {
           ))}
         </div>
 
-        <div className="animate-float flex items-center gap-2 text-foreground/30">
-          <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
-          <span className="text-sm">Returning to lobby...</span>
+        <div className="animate-slide-up flex flex-col sm:flex-row items-center gap-3">
+          {isHost && (
+            <button
+              onClick={() => send({ type: "rematch" })}
+              className="rounded-2xl bg-gradient-to-r from-pink-500 to-amber-500 px-8 py-4 text-lg font-black text-white transition-all hover:scale-[1.03] active:scale-[0.97] animate-pulse-glow"
+            >
+              🔄 Rematch!
+            </button>
+          )}
+          <Link
+            href="/"
+            className="rounded-2xl border border-surface-lighter bg-surface-light/50 px-6 py-3 text-sm font-bold text-foreground/50 transition-all hover:bg-surface-lighter hover:text-foreground/80"
+          >
+            🏠 Back to Home
+          </Link>
         </div>
+        {!isHost && (
+          <div className="animate-float flex items-center gap-2 text-foreground/30">
+            <div className="h-1.5 w-1.5 rounded-full bg-accent animate-pulse" />
+            <span className="text-sm">Waiting for host to rematch...</span>
+          </div>
+        )}
       </main>
+      </>
     );
   }
 
@@ -548,49 +625,59 @@ function RoomSession({ code, name }: { code: string; name: string }) {
     return (
       <main className="flex flex-1 min-h-0 flex-col gap-2 sm:gap-3 p-2 sm:p-3 bg-gradient-game overflow-hidden">
         {/* Top bar */}
-        <div className="glass flex items-center justify-between rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/" className="rounded-lg bg-surface-lighter/60 px-2 py-1 text-[10px] sm:text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
-              ← Home
-            </Link>
-            {isHost && (
-              <button
-                onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
-                className="rounded-lg bg-danger/20 px-2 py-1 text-[10px] sm:text-xs font-bold text-danger transition-all hover:bg-danger/30 active:scale-90"
-              >
-                ✕
-              </button>
-            )}
-            <span className="rounded-xl bg-accent/20 px-2 sm:px-3 py-1 text-xs font-black text-accent-light">
-              {game.round}/{game.totalRounds}
-            </span>
-            <span className="text-xs text-foreground/30 hidden sm:inline">
-              🌍 Where is this?
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <span className="text-[10px] sm:text-xs text-foreground/40">
-              {guessedCount}/{totalPlayers} guessed
-            </span>
-            <div className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl ${
-              game.timeLeft <= 10
-                ? "bg-danger/20 animate-pulse-urgent"
-                : game.timeLeft <= 30
-                ? "bg-warning/20"
-                : "bg-surface-lighter"
-            }`}>
-              <span className={`text-sm sm:text-base font-black ${
-                game.timeLeft <= 10
-                  ? "text-danger"
-                  : game.timeLeft <= 30
-                  ? "text-warning"
-                  : "text-foreground"
-              }`}>
-                {formatTimer(game.timeLeft)}
+        <div className="glass rounded-2xl px-3 sm:px-5 py-2 sm:py-3 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link href="/" className="rounded-lg bg-surface-lighter/60 px-2 py-1 text-[10px] sm:text-xs font-bold text-foreground/40 hover:text-foreground/70 hover:bg-surface-lighter transition-all">
+                ← Home
+              </Link>
+              {isHost && (
+                <button
+                  onClick={() => { if (confirm("End game and return to lobby?")) send({ type: "end-game" }); }}
+                  className="rounded-lg bg-danger/20 px-2 py-1 text-[10px] sm:text-xs font-bold text-danger transition-all hover:bg-danger/30 active:scale-90"
+                >
+                  ✕
+                </button>
+              )}
+              <span className="rounded-xl bg-accent/20 px-2 sm:px-3 py-1 text-xs font-black text-accent-light">
+                {game.round}/{game.totalRounds}
+              </span>
+              <span className="text-xs text-foreground/30 hidden sm:inline">
+                🌍 Where is this?
               </span>
             </div>
+
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-[10px] sm:text-xs text-foreground/40">
+                {guessedCount}/{totalPlayers} guessed
+              </span>
+              <div className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-xl ${
+                game.timeLeft <= 10
+                  ? "bg-danger/20 animate-pulse-urgent"
+                  : game.timeLeft <= 30
+                  ? "bg-warning/20"
+                  : "bg-surface-lighter"
+              }`}>
+                <span className={`text-sm sm:text-base font-black ${
+                  game.timeLeft <= 10
+                    ? "text-danger"
+                    : game.timeLeft <= 30
+                    ? "text-warning"
+                    : "text-foreground"
+                }`}>
+                  {formatTimer(game.timeLeft)}
+                </span>
+              </div>
+            </div>
           </div>
+          {/* Hint — own row so it never overflows on mobile */}
+          {game.geoHint && (
+            <div className="mt-1.5 flex justify-center animate-slide-up">
+              <span className="rounded-xl bg-accent/15 border border-accent/20 px-3 py-1 text-xs font-bold text-accent-light">
+                💡 {game.geoHint}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Street View + Map */}
@@ -632,6 +719,7 @@ function RoomSession({ code, name }: { code: string; name: string }) {
         countdown={game.timeLeft}
         round={game.round}
         totalRounds={game.totalRounds}
+        strokes={strokes}
       />
     );
   }
@@ -733,7 +821,14 @@ function RoomSession({ code, name }: { code: string; name: string }) {
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden">
+        <div className="flex-1 min-w-0 min-h-0 flex flex-col overflow-hidden relative">
+          {correctFlash && (
+            <div className="absolute inset-x-0 top-3 z-10 flex justify-center animate-slide-up pointer-events-none">
+              <div className="rounded-2xl bg-success/90 border border-success px-5 py-3 shadow-lg backdrop-blur-sm">
+                <p className="text-sm font-black text-white">🎉 You got it!</p>
+              </div>
+            </div>
+          )}
           <Canvas
             isDrawer={isDrawer && phase === "drawing"}
             strokes={strokes}

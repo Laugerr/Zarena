@@ -12,7 +12,7 @@ import type {
   LatLng,
 } from "../src/lib/types";
 import { DEFAULT_SETTINGS } from "../src/lib/types";
-import { WORDS_EN } from "../src/lib/words";
+import { WORDS_EN, WORD_CATEGORIES } from "../src/lib/words";
 import { generateRandomLocation } from "../src/lib/locations";
 
 export default class RoomServer implements Server {
@@ -37,6 +37,7 @@ export default class RoomServer implements Server {
   // GeoGuess state
   currentGeoLocation: GeoLocation | null = null;
   geoGuesses = new Map<string, LatLng>();
+  geoHint: string | null = null;
 
   constructor(room: Party) {
     this.room = room;
@@ -89,6 +90,12 @@ export default class RoomServer implements Server {
       case "end-game":
         this.handleEndGameEarly(sender);
         break;
+      case "rematch":
+        this.handleRematch(sender);
+        break;
+      case "kick":
+        this.handleKick(sender, data.playerId);
+        break;
     }
   }
 
@@ -102,6 +109,12 @@ export default class RoomServer implements Server {
       // If host left, assign new host
       if (conn.id === this.hostId && this.players.size > 0) {
         this.hostId = this.players.keys().next().value ?? null;
+      }
+
+      // If current drawer left during picking, skip to next turn
+      if (this.phase === "picking" && this.getCurrentDrawerId() === conn.id) {
+        this.stopTimer();
+        this.advanceTurn();
       }
 
       // If current drawer left during a game, skip to next turn
@@ -261,6 +274,23 @@ export default class RoomServer implements Server {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    // During drawing, correct guessers' chat is private (drawer + other correct guessers only)
+    if (this.phase === "drawing" && this.correctGuessers.has(conn.id)) {
+      const drawerId = this.getCurrentDrawerId();
+      const msg: ServerMessage = {
+        type: "correct-guesser-chat",
+        playerName: player.name,
+        text: trimmed,
+      };
+      const data = JSON.stringify(msg);
+      for (const c of this.room.getConnections()) {
+        if (c.id === drawerId || this.correctGuessers.has(c.id)) {
+          c.send(data);
+        }
+      }
+      return;
+    }
+
     this.broadcast({
       type: "chat-message",
       playerId: conn.id,
@@ -297,7 +327,7 @@ export default class RoomServer implements Server {
       drawerConn.send(JSON.stringify({ type: "pick-words", words } as ServerMessage));
     }
 
-    // Auto-pick timeout (15s to pick a word)
+    // Auto-pick timeout (15s to pick a word) — cancelled via stopTimer() if drawer disconnects
     this.startTimer(15, () => {
       if (this.phase === "picking") {
         // Auto-pick first word
@@ -382,17 +412,38 @@ export default class RoomServer implements Server {
     }
 
     this.broadcast({ type: "game-end", scores });
+  }
 
-    // Return to lobby after 10 seconds
-    setTimeout(() => {
-      this.phase = "lobby";
-      this.round = 0;
-      for (const player of this.players.values()) {
-        player.score = 0;
-        player.hasGuessedCorrectly = false;
-      }
-      this.broadcastPhaseChange();
-    }, 10000);
+  private handleRematch(conn: Connection) {
+    if (conn.id !== this.hostId) return;
+    if (this.phase !== "gameEnd") return;
+
+    // Reset and restart as if host clicked start again
+    for (const player of this.players.values()) {
+      player.score = 0;
+      player.hasGuessedCorrectly = false;
+    }
+
+    this.round = 1;
+    this.turnIndex = 0;
+    this.phase = "lobby";
+
+    if (this.settings.gameMode === "geo") {
+      this.startGeoGame();
+    } else {
+      this.turnOrder = Array.from(this.players.keys());
+      this.shuffleArray(this.turnOrder);
+      this.phase = "picking";
+      this.broadcast({ type: "game-started", game: this.getGameStateFor(null) });
+      this.startPickingPhase();
+    }
+  }
+
+  private handleKick(conn: Connection, targetId: string) {
+    if (conn.id !== this.hostId) return;
+    if (targetId === this.hostId) return; // can't kick yourself
+    const target = this.room.getConnection(targetId);
+    if (target) target.close();
   }
 
   private handleEndGameEarly(conn: Connection) {
@@ -436,9 +487,11 @@ export default class RoomServer implements Server {
   private startGeoRound() {
     this.phase = "geoGuessing";
     this.geoGuesses.clear();
+    this.geoHint = null;
 
     // Generate a random location each round
     this.currentGeoLocation = generateRandomLocation();
+    const location = this.currentGeoLocation;
 
     this.broadcastPhaseChange();
 
@@ -446,6 +499,28 @@ export default class RoomServer implements Server {
     this.startTimer(this.settings.geoTime, () => {
       this.endGeoRound();
     });
+
+    // Schedule geo hints: continent at 33% elapsed, country at 66% elapsed
+    const geoTime = this.settings.geoTime;
+    const continent = location.continent;
+    // Extract country from "City, Country" format
+    const country = location.name.includes(",")
+      ? location.name.split(",").pop()!.trim()
+      : null;
+
+    setTimeout(() => {
+      if (this.phase !== "geoGuessing" || this.currentGeoLocation !== location) return;
+      this.geoHint = `Continent: ${continent}`;
+      this.broadcast({ type: "geo-hint", hint: this.geoHint });
+    }, geoTime * 0.33 * 1000);
+
+    if (country) {
+      setTimeout(() => {
+        if (this.phase !== "geoGuessing" || this.currentGeoLocation !== location) return;
+        this.geoHint = `Country: ${country}`;
+        this.broadcast({ type: "geo-hint", hint: this.geoHint });
+      }, geoTime * 0.66 * 1000);
+    }
   }
 
   private endGeoRound() {
@@ -549,6 +624,7 @@ export default class RoomServer implements Server {
         : null,
       geoGuesses: [],
       geoLocationName: null, // only revealed in results
+      geoHint: this.geoHint,
     };
   }
 
@@ -641,6 +717,13 @@ export default class RoomServer implements Server {
       if (custom.length >= count) {
         pool = custom;
       }
+    } else if (this.settings.selectedCategories?.length > 0) {
+      const filtered: string[] = [];
+      for (const cat of this.settings.selectedCategories) {
+        const words = WORD_CATEGORIES[cat as keyof typeof WORD_CATEGORIES];
+        if (words) filtered.push(...words);
+      }
+      if (filtered.length >= count) pool = filtered;
     }
 
     const shuffled = [...pool];

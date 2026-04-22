@@ -9,11 +9,13 @@ type GeoLobbyProps = {
   players: Player[];
   settings: RoomSettings;
   isHost: boolean;
+  myId: string;
   chatEntries: ChatEntry[];
   onChat: (text: string) => void;
   onUpdateSettings: (settings: RoomSettings) => void;
   onStartGame: () => void;
   onBack: () => void;
+  onKick: (id: string) => void;
 };
 
 const GEO_TIME_OPTIONS = [15, 20, 30, 45, 60, 90, 120, 180, 240];
@@ -25,11 +27,13 @@ export default function GeoLobby({
   players,
   settings,
   isHost,
+  myId,
   chatEntries,
   onChat,
   onUpdateSettings,
   onStartGame,
   onBack,
+  onKick,
 }: GeoLobbyProps) {
   function updateSetting<K extends keyof RoomSettings>(
     key: K,
@@ -155,11 +159,19 @@ export default function GeoLobby({
                     {getAvatar(p.id)}
                   </div>
                   <span className="font-bold truncate">{p.name}</span>
-                  {i === 0 && (
+                  {i === 0 ? (
                     <span className="ml-auto shrink-0 rounded-lg bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
                       👑 Host
                     </span>
-                  )}
+                  ) : isHost && p.id !== myId ? (
+                    <button
+                      onClick={() => onKick(p.id)}
+                      className="ml-auto shrink-0 rounded-lg bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger/60 hover:bg-danger/20 hover:text-danger transition-all"
+                      title={`Kick ${p.name}`}
+                    >
+                      ✕
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>

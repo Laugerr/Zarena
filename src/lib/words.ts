@@ -120,6 +120,22 @@ const ACTIONS = [
   "praying", "meditating", "stretching", "weightlifting", "juggling",
 ];
 
+export const WORD_CATEGORIES = {
+  "🐾 Animals": ANIMALS,
+  "🍕 Food & Drinks": FOOD_AND_DRINKS,
+  "🪑 Objects": OBJECTS,
+  "🌿 Nature": NATURE,
+  "🚗 Transport": TRANSPORT,
+  "⚽ Sports": SPORTS_AND_ACTIVITIES,
+  "🏰 Places": PLACES,
+  "🐉 Fantasy": FANTASY_AND_CHARACTERS,
+  "🏷️ Brands": BRANDS_AND_LOGOS,
+  "🏃 Actions": ACTIONS,
+} as const;
+
+export type WordCategory = keyof typeof WORD_CATEGORIES;
+export const ALL_CATEGORIES = Object.keys(WORD_CATEGORIES) as WordCategory[];
+
 export const WORDS_EN: string[] = [
   ...ANIMALS,
   ...FOOD_AND_DRINKS,

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Player, RoomSettings } from "@/lib/types";
+import { ALL_CATEGORIES } from "@/lib/words";
 import { getAvatar } from "@/lib/avatars";
 import ChatBox, { type ChatEntry } from "@/components/ChatBox";
 
@@ -11,11 +12,13 @@ type DrawLobbyProps = {
   players: Player[];
   settings: RoomSettings;
   isHost: boolean;
+  myId: string;
   chatEntries: ChatEntry[];
   onChat: (text: string) => void;
   onUpdateSettings: (settings: RoomSettings) => void;
   onStartGame: () => void;
   onBack: () => void;
+  onKick: (id: string) => void;
 };
 
 const DRAW_TIME_OPTIONS = [30, 45, 60, 90, 120];
@@ -37,11 +40,13 @@ export default function DrawLobby({
   players,
   settings,
   isHost,
+  myId,
   chatEntries,
   onChat,
   onUpdateSettings,
   onStartGame,
   onBack,
+  onKick,
 }: DrawLobbyProps) {
   const [showRules, setShowRules] = useState(false);
 
@@ -50,6 +55,14 @@ export default function DrawLobby({
     value: RoomSettings[K]
   ) {
     onUpdateSettings({ ...settings, [key]: value });
+  }
+
+  function toggleCategory(cat: string) {
+    const current = settings.selectedCategories ?? [];
+    const next = current.includes(cat)
+      ? current.filter((c) => c !== cat)
+      : [...current, cat];
+    updateSetting("selectedCategories", next);
   }
 
   function copyLink() {
@@ -193,6 +206,46 @@ export default function DrawLobby({
             )}
           </div>
 
+          {/* Word categories (only when not using custom words) */}
+          {!settings.useCustomWords && (
+            <div className="pt-2">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-foreground/60">📂 Categories</span>
+                {(settings.selectedCategories?.length ?? 0) > 0 && (
+                  <button
+                    disabled={!isHost}
+                    onClick={() => updateSetting("selectedCategories", [])}
+                    className="text-[10px] text-foreground/30 hover:text-foreground/60 transition-colors disabled:pointer-events-none"
+                  >
+                    reset
+                  </button>
+                )}
+              </div>
+              <p className="text-[10px] text-foreground/30 mb-2">
+                {(settings.selectedCategories?.length ?? 0) === 0 ? "All categories (tap to filter)" : `${settings.selectedCategories.length} selected`}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {ALL_CATEGORIES.map((cat) => {
+                  const active = (settings.selectedCategories ?? []).includes(cat);
+                  return (
+                    <button
+                      key={cat}
+                      disabled={!isHost}
+                      onClick={() => toggleCategory(cat)}
+                      className={`rounded-lg px-2 py-1 text-[10px] font-bold transition-all disabled:opacity-40 ${
+                        active
+                          ? "bg-accent/80 text-white"
+                          : "bg-surface-lighter text-foreground/50 hover:bg-surface-light"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* How to play */}
           <div className="mt-4 pt-4 border-t border-surface-lighter/40">
             <button
@@ -234,11 +287,19 @@ export default function DrawLobby({
                     {getAvatar(p.id)}
                   </div>
                   <span className="font-bold truncate">{p.name}</span>
-                  {i === 0 && (
+                  {i === 0 ? (
                     <span className="ml-auto shrink-0 rounded-lg bg-warning/20 px-2 py-0.5 text-[10px] font-bold uppercase text-warning">
                       👑 Host
                     </span>
-                  )}
+                  ) : isHost && p.id !== myId ? (
+                    <button
+                      onClick={() => onKick(p.id)}
+                      className="ml-auto shrink-0 rounded-lg bg-danger/10 px-2 py-0.5 text-[10px] font-bold text-danger/60 hover:bg-danger/20 hover:text-danger transition-all"
+                      title={`Kick ${p.name}`}
+                    >
+                      ✕
+                    </button>
+                  ) : null}
                 </li>
               ))}
             </ul>

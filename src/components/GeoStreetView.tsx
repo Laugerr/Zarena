@@ -8,7 +8,9 @@ type GeoStreetViewProps = {
 };
 
 export default function GeoStreetView({ lat, lng, heading, apiKey }: GeoStreetViewProps) {
-  const src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lng}&heading=${heading}&pitch=0&fov=90&radius=50000`;
+  // radius=1500 — tight enough to land on an actual road, not a 360° photosphere
+  // source=outdoor — prefer street-level imagery over indoor/photosphere
+  const src = `https://www.google.com/maps/embed/v1/streetview?key=${apiKey}&location=${lat},${lng}&heading=${heading}&pitch=0&fov=90&radius=1500&source=outdoor`;
 
   return (
     // overflow-hidden clips anything outside this box

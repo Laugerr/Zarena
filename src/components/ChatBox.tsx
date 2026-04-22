@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type ChatEntry = {
   id: string;
-  type: "guess" | "correct" | "system";
+  type: "guess" | "correct" | "system" | "whisper";
   playerName?: string;
   text: string;
 };
@@ -71,6 +71,13 @@ export default function ChatBox({
               )}
               {entry.type === "system" && (
                 <p className="text-[11px] italic text-foreground/25">{entry.text}</p>
+              )}
+              {entry.type === "whisper" && (
+                <div className="rounded-xl bg-accent/10 border border-accent/20 px-2.5 py-1.5">
+                  <p className="text-[11px] italic text-accent-light/70">
+                    🔒 {entry.text}
+                  </p>
+                </div>
               )}
             </div>
           ))}

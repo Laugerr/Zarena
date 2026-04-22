@@ -1,73 +1,179 @@
 import type { GeoLocation } from "./types";
 
-/**
- * Weighted regions of the world with Street View coverage.
- * Each region has a bounding box and a weight (higher = more likely to be picked).
- * Weights are roughly proportional to Street View coverage density.
- */
-const REGIONS = [
-  // Europe (great coverage)
-  { name: "Western Europe", latMin: 42, latMax: 55, lngMin: -5, lngMax: 15, weight: 15 },
-  { name: "Northern Europe", latMin: 55, latMax: 70, lngMin: 5, lngMax: 30, weight: 8 },
-  { name: "Southern Europe", latMin: 36, latMax: 44, lngMin: -10, lngMax: 28, weight: 10 },
-  { name: "Eastern Europe", latMin: 44, latMax: 56, lngMin: 14, lngMax: 40, weight: 8 },
+type City = { lat: number; lng: number; name: string; continent: string };
 
-  // North America
-  { name: "US East", latMin: 30, latMax: 45, lngMin: -90, lngMax: -70, weight: 12 },
-  { name: "US West", latMin: 32, latMax: 48, lngMin: -125, lngMax: -100, weight: 10 },
-  { name: "US Central", latMin: 30, latMax: 48, lngMin: -100, lngMax: -90, weight: 6 },
-  { name: "Canada", latMin: 43, latMax: 55, lngMin: -130, lngMax: -60, weight: 5 },
-  { name: "Mexico", latMin: 16, latMax: 32, lngMin: -117, lngMax: -87, weight: 6 },
+const CITIES: City[] = [
+  // ── North America ──────────────────────────────────────────────────────────
+  { lat: 40.7589,  lng: -73.9851,  name: "New York, USA",        continent: "North America" },
+  { lat: 40.6782,  lng: -73.9442,  name: "Brooklyn, USA",        continent: "North America" },
+  { lat: 34.0522,  lng: -118.2437, name: "Los Angeles, USA",     continent: "North America" },
+  { lat: 34.0195,  lng: -118.4912, name: "Santa Monica, USA",    continent: "North America" },
+  { lat: 34.0928,  lng: -118.3287, name: "Hollywood, USA",       continent: "North America" },
+  { lat: 41.8781,  lng: -87.6298,  name: "Chicago, USA",         continent: "North America" },
+  { lat: 29.7604,  lng: -95.3698,  name: "Houston, USA",         continent: "North America" },
+  { lat: 33.4484,  lng: -112.0740, name: "Phoenix, USA",         continent: "North America" },
+  { lat: 39.9526,  lng: -75.1652,  name: "Philadelphia, USA",    continent: "North America" },
+  { lat: 29.9511,  lng: -90.0715,  name: "New Orleans, USA",     continent: "North America" },
+  { lat: 25.7617,  lng: -80.1918,  name: "Miami, USA",           continent: "North America" },
+  { lat: 36.1699,  lng: -115.1398, name: "Las Vegas, USA",       continent: "North America" },
+  { lat: 37.7749,  lng: -122.4194, name: "San Francisco, USA",   continent: "North America" },
+  { lat: 47.6062,  lng: -122.3321, name: "Seattle, USA",         continent: "North America" },
+  { lat: 45.5231,  lng: -122.6765, name: "Portland, USA",        continent: "North America" },
+  { lat: 39.7392,  lng: -104.9903, name: "Denver, USA",          continent: "North America" },
+  { lat: 30.2672,  lng: -97.7431,  name: "Austin, USA",          continent: "North America" },
+  { lat: 32.7767,  lng: -96.7970,  name: "Dallas, USA",          continent: "North America" },
+  { lat: 38.9072,  lng: -77.0369,  name: "Washington DC, USA",   continent: "North America" },
+  { lat: 42.3601,  lng: -71.0589,  name: "Boston, USA",          continent: "North America" },
+  { lat: 43.6532,  lng: -79.3832,  name: "Toronto, Canada",      continent: "North America" },
+  { lat: 45.5017,  lng: -73.5673,  name: "Montreal, Canada",     continent: "North America" },
+  { lat: 49.2827,  lng: -123.1207, name: "Vancouver, Canada",    continent: "North America" },
+  { lat: 51.0447,  lng: -114.0719, name: "Calgary, Canada",      continent: "North America" },
+  { lat: 19.4326,  lng: -99.1332,  name: "Mexico City, Mexico",  continent: "North America" },
+  { lat: 20.9674,  lng: -89.6230,  name: "Mérida, Mexico",       continent: "North America" },
+  { lat: 20.6597,  lng: -103.3496, name: "Guadalajara, Mexico",  continent: "North America" },
 
-  // South America
-  { name: "Brazil", latMin: -30, latMax: 0, lngMin: -55, lngMax: -35, weight: 8 },
-  { name: "Argentina/Chile", latMin: -50, latMax: -22, lngMin: -73, lngMax: -55, weight: 5 },
-  { name: "Colombia/Peru", latMin: -15, latMax: 10, lngMin: -80, lngMax: -67, weight: 4 },
+  // ── South America ──────────────────────────────────────────────────────────
+  { lat: -22.9068, lng: -43.1729,  name: "Rio de Janeiro, Brazil",    continent: "South America" },
+  { lat: -23.5505, lng: -46.6333,  name: "São Paulo, Brazil",         continent: "South America" },
+  { lat: -25.4297, lng: -49.2711,  name: "Curitiba, Brazil",          continent: "South America" },
+  { lat: -34.6037, lng: -58.3816,  name: "Buenos Aires, Argentina",   continent: "South America" },
+  { lat: -33.4489, lng: -70.6693,  name: "Santiago, Chile",           continent: "South America" },
+  { lat: 4.7110,   lng: -74.0721,  name: "Bogotá, Colombia",          continent: "South America" },
+  { lat: -0.1807,  lng: -78.4678,  name: "Quito, Ecuador",            continent: "South America" },
+  { lat: -12.0464, lng: -77.0428,  name: "Lima, Peru",                continent: "South America" },
+  { lat: -16.5000, lng: -68.1193,  name: "La Paz, Bolivia",           continent: "South America" },
+  { lat: -25.2867, lng: -57.6470,  name: "Asunción, Paraguay",        continent: "South America" },
+  { lat: -34.9011, lng: -56.1915,  name: "Montevideo, Uruguay",       continent: "South America" },
 
-  // Asia
-  { name: "Japan", latMin: 31, latMax: 43, lngMin: 130, lngMax: 145, weight: 8 },
-  { name: "South Korea", latMin: 34, latMax: 38, lngMin: 126, lngMax: 130, weight: 4 },
-  { name: "Southeast Asia", latMin: -8, latMax: 20, lngMin: 96, lngMax: 120, weight: 7 },
-  { name: "India", latMin: 8, latMax: 32, lngMin: 68, lngMax: 90, weight: 6 },
-  { name: "Turkey/Middle East", latMin: 30, latMax: 42, lngMin: 26, lngMax: 45, weight: 5 },
-  { name: "Russia West", latMin: 50, latMax: 60, lngMin: 30, lngMax: 60, weight: 4 },
+  // ── Europe ────────────────────────────────────────────────────────────────
+  { lat: 51.5074,  lng: -0.1278,   name: "London, UK",               continent: "Europe" },
+  { lat: 53.4808,  lng: -2.2426,   name: "Manchester, UK",            continent: "Europe" },
+  { lat: 55.8642,  lng: -4.2518,   name: "Glasgow, UK",               continent: "Europe" },
+  { lat: 48.8566,  lng: 2.3522,    name: "Paris, France",             continent: "Europe" },
+  { lat: 43.2965,  lng: 5.3698,    name: "Marseille, France",         continent: "Europe" },
+  { lat: 45.7640,  lng: 4.8357,    name: "Lyon, France",              continent: "Europe" },
+  { lat: 52.5200,  lng: 13.4050,   name: "Berlin, Germany",           continent: "Europe" },
+  { lat: 48.1351,  lng: 11.5820,   name: "Munich, Germany",           continent: "Europe" },
+  { lat: 53.5753,  lng: 10.0153,   name: "Hamburg, Germany",          continent: "Europe" },
+  { lat: 50.9333,  lng: 6.9500,    name: "Cologne, Germany",          continent: "Europe" },
+  { lat: 48.2082,  lng: 16.3738,   name: "Vienna, Austria",           continent: "Europe" },
+  { lat: 47.3769,  lng: 8.5417,    name: "Zurich, Switzerland",       continent: "Europe" },
+  { lat: 46.2044,  lng: 6.1432,    name: "Geneva, Switzerland",       continent: "Europe" },
+  { lat: 41.9028,  lng: 12.4964,   name: "Rome, Italy",               continent: "Europe" },
+  { lat: 45.4654,  lng: 9.1859,    name: "Milan, Italy",              continent: "Europe" },
+  { lat: 40.8518,  lng: 14.2681,   name: "Naples, Italy",             continent: "Europe" },
+  { lat: 45.4408,  lng: 12.3155,   name: "Venice, Italy",             continent: "Europe" },
+  { lat: 43.7696,  lng: 11.2558,   name: "Florence, Italy",           continent: "Europe" },
+  { lat: 40.4168,  lng: -3.7038,   name: "Madrid, Spain",             continent: "Europe" },
+  { lat: 41.3851,  lng: 2.1734,    name: "Barcelona, Spain",          continent: "Europe" },
+  { lat: 37.3891,  lng: -5.9845,   name: "Seville, Spain",            continent: "Europe" },
+  { lat: 37.9838,  lng: 23.7275,   name: "Athens, Greece",            continent: "Europe" },
+  { lat: 40.6401,  lng: 22.9444,   name: "Thessaloniki, Greece",      continent: "Europe" },
+  { lat: 38.7223,  lng: -9.1393,   name: "Lisbon, Portugal",          continent: "Europe" },
+  { lat: 41.1579,  lng: -8.6291,   name: "Porto, Portugal",           continent: "Europe" },
+  { lat: 52.3676,  lng: 4.9041,    name: "Amsterdam, Netherlands",    continent: "Europe" },
+  { lat: 51.2213,  lng: 4.4051,    name: "Antwerp, Belgium",          continent: "Europe" },
+  { lat: 50.8503,  lng: 4.3517,    name: "Brussels, Belgium",         continent: "Europe" },
+  { lat: 55.6761,  lng: 12.5683,   name: "Copenhagen, Denmark",       continent: "Europe" },
+  { lat: 59.9139,  lng: 10.7522,   name: "Oslo, Norway",              continent: "Europe" },
+  { lat: 59.3293,  lng: 18.0686,   name: "Stockholm, Sweden",         continent: "Europe" },
+  { lat: 60.1699,  lng: 24.9384,   name: "Helsinki, Finland",         continent: "Europe" },
+  { lat: 64.1265,  lng: -21.8174,  name: "Reykjavik, Iceland",        continent: "Europe" },
+  { lat: 50.0755,  lng: 14.4378,   name: "Prague, Czech Republic",    continent: "Europe" },
+  { lat: 47.4979,  lng: 19.0402,   name: "Budapest, Hungary",         continent: "Europe" },
+  { lat: 52.2297,  lng: 21.0122,   name: "Warsaw, Poland",            continent: "Europe" },
+  { lat: 50.0614,  lng: 19.9366,   name: "Krakow, Poland",            continent: "Europe" },
+  { lat: 44.8176,  lng: 20.4633,   name: "Belgrade, Serbia",          continent: "Europe" },
+  { lat: 45.8150,  lng: 15.9819,   name: "Zagreb, Croatia",           continent: "Europe" },
+  { lat: 43.8563,  lng: 18.4131,   name: "Sarajevo, Bosnia",          continent: "Europe" },
+  { lat: 42.6977,  lng: 23.3219,   name: "Sofia, Bulgaria",           continent: "Europe" },
+  { lat: 44.4268,  lng: 26.1025,   name: "Bucharest, Romania",        continent: "Europe" },
+  { lat: 46.7712,  lng: 23.6236,   name: "Cluj-Napoca, Romania",      continent: "Europe" },
+  { lat: 59.4370,  lng: 24.7536,   name: "Tallinn, Estonia",          continent: "Europe" },
+  { lat: 56.9496,  lng: 24.1052,   name: "Riga, Latvia",              continent: "Europe" },
+  { lat: 54.6872,  lng: 25.2797,   name: "Vilnius, Lithuania",        continent: "Europe" },
+  { lat: 55.7558,  lng: 37.6173,   name: "Moscow, Russia",            continent: "Europe" },
+  { lat: 59.9343,  lng: 30.3351,   name: "Saint Petersburg, Russia",  continent: "Europe" },
 
-  // Africa
-  { name: "South Africa", latMin: -35, latMax: -22, lngMin: 17, lngMax: 33, weight: 4 },
-  { name: "East Africa", latMin: -10, latMax: 5, lngMin: 28, lngMax: 42, weight: 3 },
-  { name: "North Africa", latMin: 25, latMax: 37, lngMin: -10, lngMax: 12, weight: 3 },
-  { name: "West Africa", latMin: 4, latMax: 15, lngMin: -17, lngMax: 10, weight: 3 },
+  // ── Middle East ───────────────────────────────────────────────────────────
+  { lat: 41.0082,  lng: 28.9784,   name: "Istanbul, Turkey",          continent: "Asia" },
+  { lat: 39.9334,  lng: 32.8597,   name: "Ankara, Turkey",            continent: "Asia" },
+  { lat: 31.7683,  lng: 35.2137,   name: "Jerusalem, Israel",         continent: "Asia" },
+  { lat: 32.0853,  lng: 34.7818,   name: "Tel Aviv, Israel",          continent: "Asia" },
+  { lat: 33.8938,  lng: 35.5018,   name: "Beirut, Lebanon",           continent: "Asia" },
+  { lat: 31.9522,  lng: 35.2332,   name: "Amman, Jordan",             continent: "Asia" },
 
-  // Oceania
-  { name: "Australia East", latMin: -38, latMax: -20, lngMin: 140, lngMax: 155, weight: 6 },
-  { name: "Australia West", latMin: -35, latMax: -20, lngMin: 115, lngMax: 140, weight: 3 },
-  { name: "New Zealand", latMin: -47, latMax: -35, lngMin: 166, lngMax: 178, weight: 3 },
+  // ── Asia ──────────────────────────────────────────────────────────────────
+  { lat: 35.6762,  lng: 139.6503,  name: "Tokyo, Japan",              continent: "Asia" },
+  { lat: 34.6937,  lng: 135.5023,  name: "Osaka, Japan",              continent: "Asia" },
+  { lat: 35.0116,  lng: 135.7681,  name: "Kyoto, Japan",              continent: "Asia" },
+  { lat: 43.0642,  lng: 141.3469,  name: "Sapporo, Japan",            continent: "Asia" },
+  { lat: 33.5904,  lng: 130.4017,  name: "Fukuoka, Japan",            continent: "Asia" },
+  { lat: 37.5665,  lng: 126.9780,  name: "Seoul, South Korea",        continent: "Asia" },
+  { lat: 35.1595,  lng: 129.0607,  name: "Busan, South Korea",        continent: "Asia" },
+  { lat: 39.9042,  lng: 116.4074,  name: "Beijing, China",            continent: "Asia" },
+  { lat: 31.2304,  lng: 121.4737,  name: "Shanghai, China",           continent: "Asia" },
+  { lat: 23.1291,  lng: 113.2644,  name: "Guangzhou, China",          continent: "Asia" },
+  { lat: 22.3193,  lng: 114.1694,  name: "Hong Kong",                 continent: "Asia" },
+  { lat: 25.0330,  lng: 121.5654,  name: "Taipei, Taiwan",            continent: "Asia" },
+  { lat: 1.3521,   lng: 103.8198,  name: "Singapore",                 continent: "Asia" },
+  { lat: 3.1390,   lng: 101.6869,  name: "Kuala Lumpur, Malaysia",    continent: "Asia" },
+  { lat: 13.7563,  lng: 100.5018,  name: "Bangkok, Thailand",         continent: "Asia" },
+  { lat: 10.8231,  lng: 106.6297,  name: "Ho Chi Minh City, Vietnam", continent: "Asia" },
+  { lat: 21.0285,  lng: 105.8542,  name: "Hanoi, Vietnam",            continent: "Asia" },
+  { lat: 14.5995,  lng: 120.9842,  name: "Manila, Philippines",       continent: "Asia" },
+  { lat: -6.2088,  lng: 106.8456,  name: "Jakarta, Indonesia",        continent: "Asia" },
+  { lat: -8.6705,  lng: 115.2126,  name: "Bali, Indonesia",           continent: "Asia" },
+  { lat: 28.6139,  lng: 77.2090,   name: "New Delhi, India",          continent: "Asia" },
+  { lat: 19.0760,  lng: 72.8777,   name: "Mumbai, India",             continent: "Asia" },
+  { lat: 12.9716,  lng: 77.5946,   name: "Bangalore, India",          continent: "Asia" },
+  { lat: 22.5726,  lng: 88.3639,   name: "Kolkata, India",            continent: "Asia" },
+  { lat: 13.0827,  lng: 80.2707,   name: "Chennai, India",            continent: "Asia" },
+
+  // ── Africa ────────────────────────────────────────────────────────────────
+  { lat: -33.9249, lng: 18.4241,   name: "Cape Town, South Africa",   continent: "Africa" },
+  { lat: -26.2041, lng: 28.0473,   name: "Johannesburg, South Africa",continent: "Africa" },
+  { lat: -29.8587, lng: 31.0218,   name: "Durban, South Africa",      continent: "Africa" },
+  { lat: -1.2921,  lng: 36.8219,   name: "Nairobi, Kenya",            continent: "Africa" },
+  { lat: -6.7924,  lng: 39.2083,   name: "Dar es Salaam, Tanzania",   continent: "Africa" },
+  { lat: 30.0444,  lng: 31.2357,   name: "Cairo, Egypt",              continent: "Africa" },
+  { lat: 31.2001,  lng: 29.9187,   name: "Alexandria, Egypt",         continent: "Africa" },
+  { lat: 36.8065,  lng: 10.1815,   name: "Tunis, Tunisia",            continent: "Africa" },
+  { lat: 33.9716,  lng: -6.8498,   name: "Rabat, Morocco",            continent: "Africa" },
+  { lat: 33.5731,  lng: -7.5898,   name: "Casablanca, Morocco",       continent: "Africa" },
+  { lat: 36.7372,  lng: 3.0865,    name: "Algiers, Algeria",          continent: "Africa" },
+  { lat: 6.5244,   lng: 3.3792,    name: "Lagos, Nigeria",            continent: "Africa" },
+  { lat: 5.5600,   lng: -0.2057,   name: "Accra, Ghana",              continent: "Africa" },
+  { lat: 9.0054,   lng: 38.7636,   name: "Addis Ababa, Ethiopia",     continent: "Africa" },
+
+  // ── Oceania ───────────────────────────────────────────────────────────────
+  { lat: -33.8688, lng: 151.2093,  name: "Sydney, Australia",         continent: "Oceania" },
+  { lat: -37.8136, lng: 144.9631,  name: "Melbourne, Australia",      continent: "Oceania" },
+  { lat: -27.4698, lng: 153.0251,  name: "Brisbane, Australia",       continent: "Oceania" },
+  { lat: -31.9505, lng: 115.8605,  name: "Perth, Australia",          continent: "Oceania" },
+  { lat: -34.9285, lng: 138.6007,  name: "Adelaide, Australia",       continent: "Oceania" },
+  { lat: -36.8485, lng: 174.7633,  name: "Auckland, New Zealand",     continent: "Oceania" },
+  { lat: -41.2865, lng: 174.7762,  name: "Wellington, New Zealand",   continent: "Oceania" },
+  { lat: -43.5321, lng: 172.6362,  name: "Christchurch, New Zealand", continent: "Oceania" },
 ];
 
-const totalWeight = REGIONS.reduce((sum, r) => sum + r.weight, 0);
+// ±2 km jitter so every game shows a different street within the city
+const JITTER = 0.018;
 
-/** Generate a random GeoLocation somewhere in the world (biased toward areas with Street View coverage) */
 export function generateRandomLocation(): GeoLocation {
-  // Pick a weighted random region
-  let roll = Math.random() * totalWeight;
-  let region = REGIONS[0];
-  for (const r of REGIONS) {
-    roll -= r.weight;
-    if (roll <= 0) {
-      region = r;
-      break;
-    }
-  }
-
-  // Random point within the region
-  const lat = region.latMin + Math.random() * (region.latMax - region.latMin);
-  const lng = region.lngMin + Math.random() * (region.lngMax - region.lngMin);
+  const city = CITIES[Math.floor(Math.random() * CITIES.length)];
+  const lat = city.lat + (Math.random() - 0.5) * JITTER * 2;
+  const lng = city.lng + (Math.random() - 0.5) * JITTER * 2;
   const heading = Math.floor(Math.random() * 360);
 
   return {
     id: `geo-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    position: { lat: Math.round(lat * 10000) / 10000, lng: Math.round(lng * 10000) / 10000 },
+    position: {
+      lat: Math.round(lat * 100000) / 100000,
+      lng: Math.round(lng * 100000) / 100000,
+    },
     heading,
-    name: region.name,
+    name: city.name,
+    continent: city.continent,
   };
 }
