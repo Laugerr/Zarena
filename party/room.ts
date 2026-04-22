@@ -631,7 +631,19 @@ export default class RoomServer implements Server {
   }
 
   private pickRandomWords(count: number): string[] {
-    const shuffled = [...WORDS_EN];
+    let pool = WORDS_EN;
+
+    if (this.settings.useCustomWords && this.settings.customWords.trim()) {
+      const custom = this.settings.customWords
+        .split(/[,\n]/)
+        .map((w) => w.trim())
+        .filter((w) => w.length > 0);
+      if (custom.length >= count) {
+        pool = custom;
+      }
+    }
+
+    const shuffled = [...pool];
     this.shuffleArray(shuffled);
     return shuffled.slice(0, count);
   }

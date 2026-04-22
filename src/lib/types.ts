@@ -16,6 +16,8 @@ export type RoomSettings = {
   wordCount: number;
   hints: number;
   geoTime: number;
+  useCustomWords: boolean;
+  customWords: string; // comma or newline separated
 };
 
 export const DEFAULT_SETTINGS: RoomSettings = {
@@ -27,6 +29,8 @@ export const DEFAULT_SETTINGS: RoomSettings = {
   wordCount: 3,
   hints: 2,
   geoTime: 60,
+  useCustomWords: false,
+  customWords: "",
 };
 
 /** Game phase */

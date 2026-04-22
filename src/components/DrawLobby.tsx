@@ -148,6 +148,49 @@ export default function DrawLobby({
                 disabled={!isHost}
               />
             </SettingRow>
+
+            {/* Custom words toggle */}
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <span className="text-xs font-semibold text-foreground/60">✏️ Custom Words</span>
+              <button
+                disabled={!isHost}
+                onClick={() => updateSetting("useCustomWords", !settings.useCustomWords)}
+                className={`relative h-6 w-11 rounded-full transition-colors disabled:opacity-30 ${
+                  settings.useCustomWords ? "bg-accent" : "bg-surface-lighter"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform ${
+                    settings.useCustomWords ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Custom words textarea */}
+            {settings.useCustomWords && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                <textarea
+                  disabled={!isHost}
+                  value={settings.customWords}
+                  onChange={(e) => updateSetting("customWords", e.target.value)}
+                  placeholder={"cat, pizza, Eiffel Tower\none word per line or comma-separated\n(min 3 words required)"}
+                  rows={5}
+                  className="w-full resize-none rounded-xl border border-surface-lighter bg-surface px-3 py-2 text-xs text-foreground placeholder:text-foreground/20 focus:border-accent focus:outline-none disabled:opacity-30 transition-colors"
+                />
+                {(() => {
+                  const count = settings.customWords
+                    .split(/[,\n]/)
+                    .map((w) => w.trim())
+                    .filter((w) => w.length > 0).length;
+                  return (
+                    <p className={`text-[10px] ${count > 0 && count < 3 ? "text-danger" : "text-foreground/30"}`}>
+                      {count} word{count !== 1 ? "s" : ""} — need at least {settings.wordCount} to start
+                    </p>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           {/* How to play */}
